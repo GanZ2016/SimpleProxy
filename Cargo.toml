@@ -1,5 +1,5 @@
 [package]
-name = "socks"
+name = "SimpleProxy"
 version = "0.1.0"
 authors = ["GanZ2016 <ganzhang@u.northwestern.edu>"]
 
