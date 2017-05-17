@@ -1,5 +1,8 @@
 //reference 
 //http://wsfdl.com/python/2016/08/19/SS5_protocol.html
+
+
+
 use std::net::{IpAddr, Ipv4Addr, SocketAddrV4, SocketAddr, Shutdown,TcpStream};
 use std::io::Error;
 use std::io::{Read,Write};
@@ -158,6 +161,7 @@ fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
         }
         else
         {
+            //only ipv4 addr or domain name is supported.
             return Ok(ConnectInfo::Unknown);
         }
     }
