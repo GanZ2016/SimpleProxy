@@ -31,11 +31,3 @@ fn timer_loop(tx: Sender<()>, ms: u32) {
         }
     }
 }
-#[test]
-
-fn test_timer_work_properly(){
-    let current_time = time::get_time();
-    let timer = Timer::new(500);
-    let duration = time::get_time() - current_time;
-    assert_eq!(500, duration.num_milliseconds());
-}
