@@ -1,8 +1,6 @@
 //reference 
 //http://wsfdl.com/python/2016/08/19/SS5_protocol.html
 
-
-
 use std::net::{IpAddr, Ipv4Addr, SocketAddrV4, SocketAddr, Shutdown,TcpStream};
 use std::io::Error;
 use std::io::{Read,Write};
@@ -33,8 +31,15 @@ pub enum ConnectInfo {
 }
 
 
-impl Tcp {
+// We build a struct Tcp for TcpStream and "read", "write" functions for Tcp.
 
+impl Tcp {
+    //  Tcp::new -> new TcpStream
+    pub fn new(stream: TcpStream) -> Tcp {
+        Tcp { stream: stream }
+    }
+
+    // Tcp::read_buf -> pull some bytes from Tcp into the specified buffer(vector of u8)
     pub fn read_buf(&mut self, buf: &mut [u8]) ->Result<(),TcpError>{
         let mut l = 0;
         while l < buf.len() {
@@ -46,27 +51,30 @@ impl Tcp {
         }
         return Ok(());
     }
+
+    // Tcp::read_size -> read any bits while return a vector of u8
     pub fn read_size(&mut self, size: usize) -> Result<Vec<u8>, TcpError>{
         let mut buf = Vec::with_capacity(size);
         match self.read_buf(&mut buf) {
             Ok(expr) => return Ok(buf),
             Err(e) => return Err(e),
         }
-
     }
 
+    // Tcp::read_u8 -> read at most 8 bits 
     pub fn read_u8(&mut self) -> Result<u8, TcpError> {
         let mut buf = [0u8];
         try!(self.read_buf(&mut buf));
         return Ok(buf[0]);
     }
-    //u8 vector to u16
+
+    // Tcp::set_16 u8 -> vector to u16
     //http://stackoverflow.com/questions/33968870/temporarily-transmute-u8-to-u16
     pub fn set_u16(a: &mut [u8], v: u16) {
         a[0] = v as u8;
         a[1] = (v >> 8) as u8;
     }
-
+    // Tcp::read_u16 -> read at most 16 bits
     pub fn read_u16(&mut self) -> Result<u16, TcpError> {
         let mut buf = [0u8; 2];
         try!(self.read_buf(&mut buf));
@@ -75,6 +83,7 @@ impl Tcp {
         return Ok(res);
     }
 
+    // Tcp::write -> write a buffer(vector of u8) into Tcp
     pub fn write(&mut self, buf:&[u8]) ->Result<(),TcpError>{
         let mut l = 0;
         while l < buf.len() {
@@ -86,9 +95,40 @@ impl Tcp {
         }
         return Ok(());
     }
+    // Tcp::write_u8 -> write at most 8 bits
+    fn write_u8(&mut self, v: u8) -> Result<(),TcpError> {
+        let buf = [v];
+        self.write(&buf)
+    }
 
 }
 
+// Tcp::get_method ->  get the connection method from clients message
+// +----+----------+----------+
+// |VER | NMETHODS | METHODS  |
+// +----+----------+----------+
+// | 1  |    1     | 1 to 255 |
+// +----+----------+----------+ 
+
+// VER:      set to X'05' for this version of the protocol
+// NMETHODS: the number of method identifier octets that appear in the METHODS field
+// METHODS:  the values currently defined for METHOD are
+//        o  X'00' NO AUTHENTICATION REQUIRED
+//        o  X'01' GSSAPI
+//        o  X'02' USERNAME/PASSWORD
+//        o  X'03' to X'7F' IANA ASSIGNED
+//        o  X'80' to X'FE' RESERVED FOR PRIVATE METHODS
+//        o  X'FF' NO ACCEPTABLE METHODS
+//
+// Since we're going to make an no authentication server, the message should be:
+//  '\x05\x01\x00'
+// When receiving this message, the server will choose a method that supports both sides,
+// and return the message
+// +----+--------+
+// |VER | METHOD |
+// +----+--------+
+// | 5  |   0    |
+// +----+--------+ 
 fn get_method(stream: &mut Tcp) -> Result<u8,TcpError> {
     
     match stream.read_u8() {
@@ -121,10 +161,34 @@ fn get_method(stream: &mut Tcp) -> Result<u8,TcpError> {
         Err(e) => return Err(e),
     }
 }
+// The client send message to the server, including the address and port of the external server.
+// +----+-----+-------+------+----------+----------+
+// |VER | CMD |  RSV  | ATYP | DST.ADDR | DST.PORT |
+// +----+-----+-------+------+----------+----------+
+// | 1  |  1  | X'00' |  1   | Variable |    2     |
+// +----+-----+-------+------+----------+----------+
+
+// VER:  protocol version, X'05'
+// CMD:
+//       o  CONNECT X'01'
+//       o  BIND X'02'
+//       o  UDP ASSOCIATE X'03'
+// RSV:  RESERVED, X'00'
+// ATYP: address type of following address
+//       o  IP V4 address: X'01'
+//       o  DOMAINNAME: X'03'
+//       o  IP V6 address: X'04'
+// DST.ADDR:  desired destination address
+// DST.PORT:  desired destination port in network octet order
+
+// In out system the message should be 
+// ATYP: IPV4 '\x05\x01\x00\x03\x0b8.8.8.8\x01\xbb'
+// ATYP: DOMAINNAME '\x05\x01\x00\x03\x0bxxx.com\x01\xbb'
+// We check the message and return ConnectInfo
 
 fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
     let method = try!(get_method(stream)); // get method(0)
-    stream.write(&[SOCK_V5, method]); //
+    stream.write(&[SOCK_V5, method]); 
     let mut recv = [0u8;4];
     try!(stream.read_buf(&mut recv));
     if recv[0] != SOCK_V5 || recv[2] != RSV {
@@ -137,7 +201,7 @@ fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
     let addr_type = recv[3];
     if addr_type == ATYP_IP_V4 {
         // GET IPV4 address    
-        let mut addr_ipv4 = [0u8,4];
+        let mut addr_ipv4 = [0u8;4];
         try!(stream.read_buf(&mut addr_ipv4));
         // GET port
         //let mut port_buf = [0u8];
@@ -166,3 +230,8 @@ fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
         }
     }
 }
+
+//  TODO: The SOCK server evaluates the request and establishes 
+//  a TCP link with the external server
+
+//  Success or Failure
