@@ -9,7 +9,7 @@ use std::time::Duration;
 use time;
 use super::timer::Timer;
 use super::socks5::{Tcp,TcpError};
-
+// Enumeration Type of Message Transfer in Tunnel
 enum Message {
     CSOpenport(u32, Sender<PortMessage>),
     CSConnect(u32,Vec<u8>),
@@ -26,6 +26,7 @@ enum Message {
 
     PortDrop(u32)
 }
+//Enumeration Type for Port Message.
 pub enum PortMessage {
     ConnectOk(Vec<u8>),
     Data(Vec<u8>),
@@ -49,12 +50,12 @@ pub struct TunnelReadPort{
     rx:Receiver<PortMessage>,
 }
 impl Tunnel {
-    pub fn new(tid:u32, server_addr: String, key: Vec<u8>) ->Tunnel {
+    pub fn new(tid:u32, server_addr: String) ->Tunnel {
         let (tx,rx) = sync_channel(10000);
         let tx2 = tx.clone();
 
         thread::spawn(move || {
-            tunnel_core_task(tid,server_addr,key,rx,tx);
+            tunnel_core_task(tid,server_addr,rx,tx);
         })
         Tunnel {tunnel_id:1,core_tx:tx2}
     }
@@ -107,3 +108,11 @@ impl Drop for TunnelReadPort {
         let _ = self.tx.send(Message::PortDrop(self.port_id));
     }
 }
+
+
+fn tunnel_core_task(tid: u32, server_addr: String, 
+                    core_rx: Receiver<Message>,
+                    core_tx: SyncSender<Message>){
+
+}
+
