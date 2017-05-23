@@ -100,6 +100,13 @@ impl Tcp {
         let buf = [v];
         self.write(&buf)
     }
+    //Tcp::write_u16 -> write at most 16 bits
+    fn write_u16(&mut self, v: u16) -> Result<(),TcpError> {
+        let mut buf = [0u8;2];
+        // let mut res = 0 as u16;
+        Tcp::set_u16(&mut buf, v);
+        self.write(&buf)
+    }
 
 }
 
@@ -188,7 +195,7 @@ fn get_method(stream: &mut Tcp) -> Result<u8,TcpError> {
 
 fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
     let method = try!(get_method(stream)); // get method(0)
-    stream.write(&[SOCK_V5, method]); 
+    try!(stream.write(&[SOCK_V5, method])); 
     let mut recv = [0u8;4];
     try!(stream.read_buf(&mut recv));
     if recv[0] != SOCK_V5 || recv[2] != RSV {
@@ -233,5 +240,54 @@ fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
 
 //  TODO: The SOCK server evaluates the request and establishes 
 //  a TCP link with the external server
+// +----+-----+-------+------+----------+----------+
+// |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
+// +----+-----+-------+------+----------+----------+
+// | 1  |  1  | X'00' |  1   | Variable |    2     |
+// +----+-----+-------+------+----------+----------+
 
-//  Success or Failure
+// VER:   protocol version, X'05'
+// REP:   Reply field:
+//        o  X'00' succeeded
+//        o  X'01' general SOCKS server failure
+//        o  X'02' connection not allowed by ruleset
+//        o  X'03' Network unreachable
+//        o  X'04' Host unreachable
+//        o  X'05' Connection refused
+//        o  X'06' TTL expired
+//        o  X'07' Command not supported
+//        o  X'08' Address type not supported
+//        o  X'09' to X'FF' unassigned
+// RSV:   RESERVED, X'00'
+// ATYP:  address type of following address
+//        o  IP V4 address: X'01'
+//        o  DOMAINNAME: X'03'
+//        o  IP V6 address: X'04'
+// BND.ADDR:   server bound address
+// BND.PORT:   server bound port in network octet order
+
+// if succefully connected, it should return below message to clint:
+// "\x05\x00\x00\x01\BND.ADDR\BND.PORT:\"
+fn get_reply(stream: &mut Tcp, addr: SocketAddr, rep_info:u8) -> Result<(),TcpError>{
+    let buf = [SOCK_V5,rep_info,RSV];
+    try!(stream.write(&buf));
+    match addr {
+        SocketAddr::V4(ipv4) => {
+            let addr_vec = ipv4.ip().octets();
+            let buf = [ATYP_IP_V4,addr_vec[3],addr_vec[2],addr_vec[1],addr_vec[0]];
+            try!(stream.write(&buf));
+            try!(stream.write_u16(ipv4.port()));
+        },
+        SocketAddr::V6(ipv6) => panic!("Found ipv6 Address"),
+    }
+    Ok(())
+}
+
+fn success_reply(stream: &mut Tcp, addr:SocketAddr) -> Result<(),TcpError> {
+    return get_reply(stream,addr,1 as u8);
+}
+
+fn failure_reply(stream: &mut Tcp, addr:SocketAddr) -> Result<(),TcpError> {
+    let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0,0,0,0),0));
+    return get_reply(stream,addr,0 as u8);
+}
