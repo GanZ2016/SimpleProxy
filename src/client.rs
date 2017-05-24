@@ -1,3 +1,6 @@
+#[macro_use] extern crate log;
+use std::sync::mpsc;
+use crates::io::log;
 use std::sync::mpsc::sync_channel;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::SyncSender;
@@ -13,8 +16,25 @@ use super::timer::Timer;
 use super::socks5::{Tcp,TcpError};
 use super::cryptor::Cryptor;
 // Enumeration Type of Message Transfer in Tunnel
+pub mod cs {
+    pub const OPEN_PORT: u8 = 1;
+    pub const CLOSE_PORT: u8 = 2;
+    pub const SHUTDOWN_WRITE: u8 = 4;
+    pub const CONNECT: u8 = 5;
+    pub const CONNECT_OK: u8 = 4;
+    pub const CONNECT_DOMAIN_NAME: u8 = 6;
+    pub const DATA: u8 = 7;
+    pub const HEARTBEAT: u8 = 8;
+}
+pub mod sc {
+    pub const CLOSE_PORT: u8 = 1;
+    pub const SHUTDOWN_WRITE: u8 = 3;
+    pub const CONNECT_OK: u8 = 4;
+    pub const DATA: u8 = 5;
+    pub const HEARTBEAT_RSP: u8 = 6;
+}
 enum Message {
-    CSOpenport(u32, Sender<PortMessage>),
+    CSOpenPort(u32, Sender<PortMessage>),
     CSConnect(u32,Vec<u8>),
     CSShutdownWrite(u32),
     CSConnectDN(u32, Vec<u8>, u16),
@@ -23,7 +43,7 @@ enum Message {
 
     SCHeartbeat,
     SCClosePort(u32),
-    SCShutDownWrite(u32),
+    SCShutdownWrite(u32),
     SCConnectOk(u32,Vec<u8>),
     SCData(u32,Vec<u8>),
 
@@ -67,7 +87,7 @@ impl Tunnel {
 
         thread::spawn(move || {
             tunnel_core_task(tid,server_addr, rx,tx);
-        })
+        });
         Tunnel {tunnel_id:1,core_tx:tx2}
     }
      pub fn open_port(&mut self) -> (TunnelWritePort, TunnelReadPort) {
@@ -90,18 +110,18 @@ impl TunnelWritePort {
     }
 
     pub fn connect(&self, buf: Vec<u8>) {
-        let _ = self.tx.send(Message::CSConnect(self.port.id, buf));
+        let _ = self.tx.send(Message::CSConnect(self.port_id, buf));
     }
 
     pub fn connect_domain_name(&self, buf: Vec<u8>, port: u16) {
         let _ = self.tx.send(Message::CSConnectDN(self.port_id, buf, port));
     }
     pub fn shutdown_write(&self) {
-        let _ = self.tx.send(Message::CSShutdownWrite(self.id));
+        let _ = self.tx.send(Message::CSShutdownWrite(self.port_id));
     }
 
     pub fn close(&self) {
-        let _ = self.tx.send(Message::CSClosePort(self.id));
+        let _ = self.tx.send(Message::CSClosePort(self.port_id));
     }
 
 }
@@ -192,7 +212,7 @@ fn tunnel_core_task(tid: u32, server_addr: String,
 
     thread::spawn(move || {
         tunnel_tcp_recv(receiver, core_tx2)
-    })
+    });
 
     let mut stream = Tcp::new(sender);
     let mut port_map = PortMap::new();
