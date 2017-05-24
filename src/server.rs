@@ -1,3 +1,4 @@
+#![feature(mpsc_select)]
 use std::sync::mpsc::{sync_channel, SyncSender, channel, Sender, Receiver};
 use std::thread;
 use std::vec::Vec;
@@ -7,6 +8,7 @@ use std::time::Duration;
 use std::net::TcpStream;
 use std::net::SocketAddr;
 use std::net::lookup_host;
+use time;
 use super::timer::Timer;
 use super::socks5::{Tcp,TcpError};
 
@@ -305,8 +307,8 @@ fn tunnel_core_task(sender: TcpStream){
         let _ = value.tx.send(PortMessage::ClosePort);
     }
 }
-fn tunnel_loop(core_tx: &SyncSender<TunnelMsg>,
-               core_rx: &Receiver<TunnelMsg>, stream: &mut Tcp,
+fn tunnel_loop(core_tx: &SyncSender<Message>,
+               core_rx: &Receiver<Message>, stream: &mut Tcp,
                port_map: &mut PortMap) -> Result<(), TcpError> 
     {
     let timer = Timer::new(HEARTBEAT_INTERVAL_MS);

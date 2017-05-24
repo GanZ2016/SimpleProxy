@@ -1,6 +1,6 @@
+#![feature(mpsc_select)]
 #[macro_use] extern crate log;
 use std::sync::mpsc;
-use crates::io::log;
 use std::sync::mpsc::sync_channel;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::SyncSender;
@@ -14,7 +14,6 @@ use std::net::TcpStream;
 use time;
 use super::timer::Timer;
 use super::socks5::{Tcp,TcpError};
-use super::cryptor::Cryptor;
 // Enumeration Type of Message Transfer in Tunnel
 pub mod cs {
     pub const OPEN_PORT: u8 = 1;
@@ -134,7 +133,7 @@ impl Drop for TunnelWritePort {
 impl TunnelReadPort {
     pub fn read(&self) -> PortMessage {
         match self.rx.recv() {
-            ok(msg) => msg,
+            Ok(msg) => msg,
             Err(_) => PortMessage::ClosePort
         }
     }
@@ -197,7 +196,7 @@ fn tunnel_core_task(tid: u32, server_addr: String,
                     core_rx: Receiver<Message>,
                     core_tx: SyncSender<Message>){
     let sender = match TcpStream::connect(&server_addr[..]){
-        OK(sender) => sender,
+        Ok(sender) => sender,
         Err(_) => {
             thread::sleep(Duration::from_millis(1000));
             thread::spawn(move || {
