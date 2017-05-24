@@ -17,7 +17,7 @@ enum Message {
     CSOpenport(u32, Sender<PortMessage>),
     CSConnect(u32,Vec<u8>),
     CSShutdownWrite(u32),
-    CSConnectDN(u32, Vec<u8>, u16)
+    CSConnectDN(u32, Vec<u8>, u16),
     CSClosePort(u32),
     CSData(u32,Vec<u8>),
 
