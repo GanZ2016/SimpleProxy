@@ -1,5 +1,3 @@
-#![feature(mpsc_select)]
-#[macro_use] extern crate log;
 use std::sync::mpsc::{sync_channel, SyncSender, channel, Sender, Receiver};
 use std::thread;
 use std::vec::Vec;
@@ -9,24 +7,13 @@ use std::net::TcpStream;
 use time;
 use super::timer::Timer;
 use super::socks5::{Tcp,TcpError};
+use super::protocol::{
+    VERIFY_DATA, cs, sc,
+    HEARTBEAT_INTERVAL_MS,
+    ALIVE_TIMEOUT_TIME_MS
+};
 // Enumeration Type of Message Transfer in Tunnel
-pub mod cs {
-    pub const OPEN_PORT: u8 = 1;
-    pub const CLOSE_PORT: u8 = 2;
-    pub const SHUTDOWN_WRITE: u8 = 4;
-    pub const CONNECT: u8 = 5;
-    pub const CONNECT_OK: u8 = 4;
-    pub const CONNECT_DOMAIN_NAME: u8 = 6;
-    pub const DATA: u8 = 7;
-    pub const HEARTBEAT: u8 = 8;
-}
-pub mod sc {
-    pub const CLOSE_PORT: u8 = 1;
-    pub const SHUTDOWN_WRITE: u8 = 3;
-    pub const CONNECT_OK: u8 = 4;
-    pub const DATA: u8 = 5;
-    pub const HEARTBEAT_RSP: u8 = 6;
-}
+
 enum Message {
     CSOpenPort(u32, Sender<PortMessage>),
     CSConnect(u32,Vec<u8>),
@@ -148,7 +135,6 @@ fn tunnel_tcp_recv( receiver: TcpStream,
 
 fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
                     stream: &mut Tcp) -> Result<(), TcpError> {
-    let ctr = try!(stream.read_exact(Cryptor::ctr_size()));
 
     loop {
         let op = try!(stream.read_u8());

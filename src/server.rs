@@ -1,4 +1,3 @@
-#![feature(mpsc_select)]
 use std::sync::mpsc::{sync_channel, SyncSender, channel, Sender, Receiver};
 use std::thread;
 use std::vec::Vec;
@@ -11,26 +10,13 @@ use std::net::lookup_host;
 use time;
 use super::timer::Timer;
 use super::socks5::{Tcp,TcpError};
-
+use super::protocol::{
+VERIFY_DATA, cs, sc,
+    HEARTBEAT_INTERVAL_MS,
+    ALIVE_TIMEOUT_TIME_MS
+};
 use std::io::{Read,Write};
 
-pub mod cs {
-    pub const OPEN_PORT: u8 = 1;
-    pub const CLOSE_PORT: u8 = 2;
-    pub const SHUTDOWN_WRITE: u8 = 4;
-    pub const CONNECT: u8 = 5;
-    pub const CONNECT_OK: u8 = 4;
-    pub const CONNECT_DOMAIN_NAME: u8 = 6;
-    pub const DATA: u8 = 7;
-    pub const HEARTBEAT: u8 = 8;
-}
-pub mod sc {
-    pub const CLOSE_PORT: u8 = 1;
-    pub const SHUTDOWN_WRITE: u8 = 3;
-    pub const CONNECT_OK: u8 = 4;
-    pub const DATA: u8 = 5;
-    pub const HEARTBEAT_RSP: u8 = 6;
-}
 
 // Enumeration Type of Message Transfer in Tunnel
 enum Message {
