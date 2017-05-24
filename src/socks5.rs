@@ -88,7 +88,7 @@ impl Tcp {
         a[2] = (v >> 8) as u8;
         a[3] = (v >> 8) as u8;
     }
-        pub fn read_u32(&mut self) -> Result<u32, TcpError> {
+    pub fn read_u32(&mut self) -> Result<u32, TcpError> {
         let mut buf = [0u8; 4];
         try!(self.read_buf(&mut buf));
         let mut res = 0 as u32;
@@ -110,15 +110,20 @@ impl Tcp {
         return Ok(());
     }
     // Tcp::write_u8 -> write at most 8 bits
-    fn write_u8(&mut self, v: u8) -> Result<(),TcpError> {
+    pub fn write_u8(&mut self, v: u8) -> Result<(),TcpError> {
         let buf = [v];
         self.write(&buf)
     }
     //Tcp::write_u16 -> write at most 16 bits
-    fn write_u16(&mut self, v: u16) -> Result<(),TcpError> {
+    pub fn write_u16(&mut self, v: u16) -> Result<(),TcpError> {
         let mut buf = [0u8;2];
         // let mut res = 0 as u16;
         Tcp::set_u16(&mut buf, v);
+        self.write(&buf)
+    }
+    pub fn write_u32(&mut self, v: u32) -> Result<(),TcpError> {
+        let mut buf = [0u8;4];
+        Tcp::set_u32(&mut buf, v);
         self.write(&buf)
     }
 
