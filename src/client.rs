@@ -1,11 +1,6 @@
 #![feature(mpsc_select)]
 #[macro_use] extern crate log;
-use std::sync::mpsc;
-use std::sync::mpsc::sync_channel;
-use std::sync::mpsc::channel;
-use std::sync::mpsc::SyncSender;
-use std::sync::mpsc::Sender;
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{sync_channel, SyncSender, channel, Sender, Receiver};
 use std::thread;
 use std::vec::Vec;
 use std::time::Duration;
