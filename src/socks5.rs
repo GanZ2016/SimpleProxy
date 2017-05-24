@@ -82,6 +82,20 @@ impl Tcp {
         Tcp::set_u16(&mut buf, res);
         return Ok(res);
     }
+    pub fn set_u32(a: &mut [u8], v: u32) {
+        a[0] = v as u8;
+        a[1] = (v >> 8) as u8;
+        a[2] = (v >> 8) as u8;
+        a[3] = (v >> 8) as u8;
+    }
+        pub fn read_u32(&mut self) -> Result<u32, TcpError> {
+        let mut buf = [0u8; 4];
+        try!(self.read_buf(&mut buf));
+        let mut res = 0 as u32;
+        Tcp::set_u32(&mut buf, res);
+        return Ok(res);
+    }
+
 
     // Tcp::write -> write a buffer(vector of u8) into Tcp
     pub fn write(&mut self, buf:&[u8]) ->Result<(),TcpError>{
