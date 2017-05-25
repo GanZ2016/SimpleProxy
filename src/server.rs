@@ -4,14 +4,12 @@ use std::vec::Vec;
 use std::str::from_utf8;
 use std::collections::HashMap;
 use std::time::Duration;
-use std::net::TcpStream;
-use std::net::SocketAddr;
-use std::net::lookup_host;
+use std::net::{TcpStream,SocketAddr,lookup_host};
 use time;
 use super::timer::Timer;
 use super::socks5::{Tcp,TcpError};
 use super::protocol::{
-VERIFY_DATA, cs, sc,
+    VERIFY_DATA, cs, sc,
     HEARTBEAT_INTERVAL_MS,
     ALIVE_TIMEOUT_TIME_MS
 };
@@ -68,12 +66,12 @@ struct PortMapValue {
 type PortMap = HashMap<u32, PortMapValue>;
 
 impl Tunnel {
-    pub fn new(stream: TcpStream){
+    pub fn new(stream: TcpStream) {
         thread::spawn(move || {
             tunnel_core_task(stream);
         });
-    }
-} 
+    } 
+}
 impl Copy for Tunnel {
 }
 
@@ -269,8 +267,6 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
             }
         }
     }
-
-    Ok(())
 }
 
 
@@ -286,7 +282,7 @@ fn tunnel_core_task(sender: TcpStream){
     let mut stream = Tcp::new(sender);
     let mut port_map = PortMap::new();
 
-    let _ = tunnel_loop( &core_tx, &core_rx, &mut stream, &mut port_map);
+    let _ = tunnel_loop(&core_tx, &core_rx, &mut stream, &mut port_map);
 
     stream.shutdown();
     for (_, value) in port_map.iter() {
@@ -307,7 +303,6 @@ fn tunnel_loop(core_tx: &SyncSender<Message>,
                 if duration.num_milliseconds() > ALIVE_TIMEOUT_TIME_MS {
                     break
                 }
-                try!(stream.write_u8(cs::HEARTBEAT));
             },
 
             msg = core_rx.recv() => match msg.unwrap() {
