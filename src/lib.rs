@@ -3,9 +3,7 @@
 
 #[macro_use]
 extern crate log;
-extern crate crypto;
 extern crate time;
-extern crate rand;
 
 pub mod socks5;
 pub mod server;

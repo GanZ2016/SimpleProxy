@@ -221,7 +221,7 @@ fn tunnel_tcp_recv(receiver: TcpStream,
     let mut stream = Tcp::new(receiver);
     let _ = tunnel_recv_loop(&core_tx, &mut stream);
     stream.shutdown();
-    let _ = core_tx.send(Message::CloseTunnel);
+    core_tx.send(Message::CloseTunnel).unwrap();
 }
 
 fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
@@ -236,20 +236,20 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
     loop {
         let op = try!(stream.read_u8());
         if op == cs::HEARTBEAT {
-            let _ = core_tx.send(Message::CSHeartbeat);
+            core_tx.send(Message::CSHeartbeat).unwrap();
             continue
         }
 
         let id = try!(stream.read_u32());
         match op {
             cs::OPEN_PORT => {
-                let _ = core_tx.send(Message::CSOpenPort(id));
+                core_tx.send(Message::CSOpenPort(id)).unwrap();
             },
             cs::CLOSE_PORT => {
-                let _ = core_tx.send(Message::CSClosePort(id));
+                core_tx.send(Message::CSClosePort(id)).unwrap();
             },
             cs::SHUTDOWN_WRITE => {
-                let _ = core_tx.send(Message::CSShutdownWrite(id));
+                core_tx.send(Message::CSShutdownWrite(id)).unwrap();
             },
 
             cs::CONNECT_DOMAIN_NAME => {
@@ -257,13 +257,13 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
                 let buf = try!(stream.read_exact((len - 2) as usize));
                 let port = try!(stream.read_u16());
                 let domain_name = buf[..].clone();
-                let _ = core_tx.send(Message::CSConnectDN(id, domain_name, port));
+                core_tx.send(Message::CSConnectDN(id, domain_name, port)).unwrap();
             },
 
             _ => {
                 let len = try!(stream.read_u32());
                 let buf = try!(stream.read_exact(len as usize));
-                let _ = core_tx.send(Message::CSData(op, id, buf));
+                core_tx.send(Message::CSData(op, id, buf)).unwrap();
             }
         }
     }
@@ -286,7 +286,7 @@ fn tunnel_core_task(sender: TcpStream){
 
     stream.shutdown();
     for (_, value) in port_map.iter() {
-        let _ = value.tx.send(PortMessage::ClosePort);
+        value.tx.send(PortMessage::ClosePort).unwrap();
     }
 }
 fn tunnel_loop(core_tx: &SyncSender<Message>,
