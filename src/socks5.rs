@@ -96,6 +96,18 @@ impl Tcp {
         return Ok(res);
     }
 
+    pub fn shutdown(&mut self) {
+        self.stream.shutdown(Shutdown::Both);
+    }
+
+    pub fn shutdown_write(&mut self) {
+        self.stream.shutdown(Shutdown::Write);
+    }
+    
+    pub fn shutdown_read(&mut self) {
+        self.stream.shutdown(Shutdown::Read);
+    }
+
 
     // Tcp::write -> write a buffer(vector of u8) into Tcp
     pub fn write(&mut self, buf:&[u8]) ->Result<(),TcpError>{
