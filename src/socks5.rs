@@ -44,7 +44,7 @@ impl Tcp {
         let mut l = 0;
         while l < buf.len() {
             match self.stream.read(&mut buf[l..]) {
-                Ok(0) => return Err(TcpError::ErrorData),
+                Ok(0) => return Err(TcpError::Eof),
                 Ok(res) => l += res,
                 Err(e) => return Err(TcpError::IoError(e)),
             }
@@ -52,14 +52,34 @@ impl Tcp {
         return Ok(());
     }
 
-    // Tcp::read_size -> read any bits while return a vector of u8
+    // Tcp::read_size -> read some bits while return a vector of u8 with particular size
     pub fn read_size(&mut self, size: usize) -> Result<Vec<u8>, TcpError>{
         let mut buf = Vec::with_capacity(size);
+        unsafe {
+            buf.set_len(size);
+            }
         match self.read_buf(&mut buf) {
             Ok(expr) => return Ok(buf),
             Err(e) => return Err(e),
         }
     }
+
+    pub fn read_at_most(&mut self, size: usize) -> Result<Vec<u8>, TcpError> {
+        let mut buf = Vec::with_capacity(size);
+        unsafe {
+            buf.set_len(size);
+            }
+        match self.stream.read(&mut buf) {
+            Ok(0) => return Err(TcpError::Eof),
+            Ok(res) => unsafe {
+            buf.set_len(res);
+            },
+            Err(e) => return Err(TcpError::IoError(e)),
+        }
+        Ok(buf)
+    }
+
+
 
     // Tcp::read_u8 -> read at most 8 bits 
     pub fn read_u8(&mut self) -> Result<u8, TcpError> {
@@ -103,7 +123,7 @@ impl Tcp {
     pub fn shutdown_write(&mut self) {
         self.stream.shutdown(Shutdown::Write);
     }
-    
+
     pub fn shutdown_read(&mut self) {
         self.stream.shutdown(Shutdown::Read);
     }

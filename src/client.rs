@@ -129,10 +129,7 @@ impl Drop for TunnelReadPort {
 fn tunnel_tcp_recv( receiver: TcpStream,
                    core_tx: SyncSender<Message>) {
     let mut stream = Tcp::new(receiver);
-    match tunnel_recv_loop( &core_tx, &mut stream) {
-        _ => Ok(_),
-        Err(e) => TcpError(e),
-    } 
+    tunnel_recv_loop( &core_tx, &mut stream).unwrap();
     stream.shutdown();
 }
 
@@ -158,13 +155,13 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
 
             sc::CONNECT_OK => {
                 let len = try!(stream.read_u32());
-                let buf = try!(stream.read_exact(len as usize));
+                let buf = try!(stream.read_size(len as usize));
                 let _ = core_tx.send(Message::SCConnectOk(id, buf)).unwrap();
             },
 
             sc::DATA => {
                 let len = try!(stream.read_u32());
-                let buf = try!(stream.read_exact(len as usize));
+                let buf = try!(stream.read_size(len as usize));
                 let _ = core_tx.send(Message::SCData(id, buf)).unwrap();
             },
 
@@ -200,12 +197,7 @@ fn tunnel_core_task(tid: u32, server_addr: String,
     let mut stream = Tcp::new(sender);
     let mut port_map = PortMap::new();
 
-    match tunnel_loop(tid, &core_rx, &mut stream, &mut port_map){
-        Ok() => {},
-        Err(_) => {
-
-        }
-    };
+    tunnel_loop(tid, &core_rx, &mut stream, &mut port_map).unwrap();
     info!("tunnel {} broken", tid);
 
     stream.shutdown();

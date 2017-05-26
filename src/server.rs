@@ -138,6 +138,7 @@ fn tunnel_port_write(s: TcpStream, write_port: TunnelWritePort) {
             }
         }
     }
+}
 
 fn tunnel_port_read(s: TcpStream, read_port: TunnelReadPort) {
     let mut stream = Tcp::new(s);
@@ -176,7 +177,9 @@ fn tunnel_port_task(read_port: TunnelReadPort, write_port: TunnelWritePort) {
                     for host in hosts {
                         let conn = match host {
                             SocketAddr::V4(addr_v4) =>
-                                TcpStream::connect((addr_v4.ip().clone(), port))
+                                TcpStream::connect((addr_v4.ip().clone(), port)),
+                            SocketAddr::V6(addr_v6) =>
+                                TcpStream::connect((addr_v6.ip().clone(), port))
                         };
                         match conn {
                             Ok(s) => { stream = Some(s); break; },
@@ -228,7 +231,7 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
                     stream: &mut Tcp) -> Result<(), TcpError> {
 
 
-    let buf = try!(stream.read_exact(VERIFY_DATA.len()));
+    let buf = try!(stream.read_size(VERIFY_DATA.len()));
 
     if &buf[..] != &VERIFY_DATA[..] {
         return Err(TcpError::ErrorData);
@@ -254,15 +257,15 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
 
             cs::CONNECT_DOMAIN_NAME => {
                 let len = try!(stream.read_u32());
-                let buf = try!(stream.read_exact((len - 2) as usize));
+                let buf = try!(stream.read_size((len - 2) as usize));
                 let port = try!(stream.read_u16());
-                let domain_name = buf[..].clone();
+                let domain_name = buf.clone();
                 core_tx.send(Message::CSConnectDN(id, domain_name, port)).unwrap();
             },
 
             _ => {
                 let len = try!(stream.read_u32());
-                let buf = try!(stream.read_exact(len as usize));
+                let buf = try!(stream.read_size(len as usize));
                 core_tx.send(Message::CSData(op, id, buf)).unwrap();
             }
         }
@@ -270,7 +273,7 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
 }
 
 
-fn tunnel_core_task(sender: TcpStream){
+pub fn tunnel_core_task(sender: TcpStream){
     let (core_tx, core_rx) = sync_channel(10000);
     let receiver = sender.try_clone().unwrap();
     let core_tx2 = core_tx.clone();
@@ -414,5 +417,5 @@ fn tunnel_loop(core_tx: &SyncSender<Message>,
     }
 
     Ok(())
-    }
+    
 }
