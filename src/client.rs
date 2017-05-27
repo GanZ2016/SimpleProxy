@@ -3,12 +3,13 @@ use std::thread;
 use std::vec::Vec;
 use std::time::Duration;
 use std::collections::HashMap;
-use std::net::TcpStream;
-
+use std::net::{TcpStream,ToSocketAddrs};
+use std::env;
+use std::io::Write;
+use std::str::from_utf8;
 use time;
 use super::timer::Timer;
-use super::socks5::{Tcp,TcpError,success_reply,failure_reply,ConnectInfo,fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
-};
+use super::socks5::{Tcp,TcpError,success_reply,failure_reply,ConnectInfo,connect_target};
 use super::protocol::{
     VERIFY_DATA, cs, sc,
     HEARTBEAT_INTERVAL_MS,
@@ -136,9 +137,9 @@ pub fn tunnel_read_port(tcpstream: TcpStream, port: TunnelReadPort) {
         },
         _ => None,
     };
-    let mut stream = Tcp::new(tcpstream);
+    let mut stream = Tcp::new(tcpstream.try_clone().unwrap());
     let addr_ok = match addr {
-        Some(addr) => socks5::success_reply(&mut stream,addr).is_ok(),
+        Some(addr) => success_reply(&mut stream,addr).is_ok(),
         None => false,
     };
     if !addr_ok{ stream.shutdown();}
@@ -146,7 +147,7 @@ pub fn tunnel_read_port(tcpstream: TcpStream, port: TunnelReadPort) {
         let buf = match port.read() {
             PortMessage::Data(buf) => buf,
             PortMessage::ShutdownWrite =>{
-                stream.shutdown_write;
+                stream.shutdown_write();
                 break
             },
             _ => {
@@ -156,11 +157,56 @@ pub fn tunnel_read_port(tcpstream: TcpStream, port: TunnelReadPort) {
         };
 
         match stream.write(&buf[..]) {
-            Ok(_) => ,
+            Ok(_) => {},
             Err(_) => {
                 stream.shutdown();
                 break
             },
+        }
+    }
+}
+
+pub fn tunnel_write_port(tcpstream: TcpStream, write_port: TunnelWritePort, read_port:TunnelReadPort) {
+    let mut stream = Tcp::new(tcpstream.try_clone().unwrap());
+    // get connection info: address or domain + port
+    match connect_target(&mut stream) {
+        Ok(ConnectInfo::Addr(addr)) => {
+            let mut buf = Vec::new();
+            write!(&mut buf, "{}", addr);
+            write_port.connect(buf);
+        },
+       Ok(ConnectInfo::Domain(domain_name,port)) => {
+           write_port.connect_domain_name(domain_name,port);
+       },
+       _ =>{
+           return write_port.close();
+       }
+    };
+    // create thread
+    // check address, and get reply from server
+    // if is "DATA", write data into buffer and write into tcpstream
+    // if is "SHUTDOWN_WRITE", stop write to stream
+    // eles, shutdown the connection
+    thread::spawn(move || {
+        tunnel_read_port(tcpstream,read_port);
+    });
+    //Write data through write_port until EoF or error
+    while true {
+        match stream.read_at_most(1024) {
+            Ok(buf) => {
+                write_port.write(buf);
+            },
+            Err(TcpError::Eof) => {
+                stream.shutdown_read(); //stop read from stream
+                write_port.shutdown_write(); //stop write to port
+                break
+            },
+            Err(_) => {
+                //shutdown stream and close the port
+                stream.shutdown();
+                write_port.close();
+                break
+            }
         }
     }
 }

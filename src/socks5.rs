@@ -187,7 +187,7 @@ impl Tcp {
 // +----+--------+
 // | 5  |   0    |
 // +----+--------+ 
-fn get_method(stream: &mut Tcp) -> Result<u8,TcpError> {
+pub fn get_method(stream: &mut Tcp) -> Result<u8,TcpError> {
     
     match stream.read_u8() {
         Ok(ver) => {
@@ -244,7 +244,7 @@ fn get_method(stream: &mut Tcp) -> Result<u8,TcpError> {
 // ATYP: DOMAINNAME '\x05\x01\x00\x03\x0bxxx.com\x01\xbb'
 // We check the message and return ConnectInfo
 
-fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
+pub fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
     let method = try!(get_method(stream)); // get method(0)
     try!(stream.write(&[SOCK_V5, method])); 
     let mut recv = [0u8;4];
@@ -319,7 +319,7 @@ fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
 
 // if succefully connected, it should return below message to clint:
 // "\x05\x00\x00\x01\BND.ADDR\BND.PORT:\"
-fn get_reply(stream: &mut Tcp, addr: SocketAddr, rep_info:u8) -> Result<(),TcpError>{
+pub fn get_reply(stream: &mut Tcp, addr: SocketAddr, rep_info:u8) -> Result<(),TcpError>{
     let buf = [SOCK_V5,rep_info,RSV];
     try!(stream.write(&buf));
     match addr {
@@ -334,11 +334,11 @@ fn get_reply(stream: &mut Tcp, addr: SocketAddr, rep_info:u8) -> Result<(),TcpEr
     Ok(())
 }
 
-fn success_reply(stream: &mut Tcp, addr:SocketAddr) -> Result<(),TcpError> {
+pub fn success_reply(stream: &mut Tcp, addr:SocketAddr) -> Result<(),TcpError> {
     return get_reply(stream,addr,1 as u8);
 }
 
-fn failure_reply(stream: &mut Tcp, addr:SocketAddr) -> Result<(),TcpError> {
+pub fn failure_reply(stream: &mut Tcp, addr:SocketAddr) -> Result<(),TcpError> {
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0,0,0,0),0));
     return get_reply(stream,addr,0 as u8);
 }

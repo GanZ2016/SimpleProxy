@@ -16,7 +16,7 @@ fn main()  {
     opts.reqopt("l", "listen address", "set listen-address","L_ADDR");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => { m }
-        Err(f) => { 
+        Err(_) => { 
             print!("l");
             return 
             }
