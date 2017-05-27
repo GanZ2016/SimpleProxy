@@ -4,9 +4,11 @@ use std::vec::Vec;
 use std::time::Duration;
 use std::collections::HashMap;
 use std::net::TcpStream;
+
 use time;
 use super::timer::Timer;
-use super::socks5::{Tcp,TcpError};
+use super::socks5::{Tcp,TcpError,success_reply,failure_reply,ConnectInfo,fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
+};
 use super::protocol::{
     VERIFY_DATA, cs, sc,
     HEARTBEAT_INTERVAL_MS,
@@ -126,6 +128,43 @@ impl Drop for TunnelReadPort {
         let _ = self.tx.send(Message::PortDrop(self.port_id)).unwrap();
     }
 }
+
+pub fn tunnel_read_port(tcpstream: TcpStream, port: TunnelReadPort) {
+    let addr = match port.read() {
+        PortMessage::ConnectOk(buf) =>{
+            from_utf8(&buf[..]).unwrap().to_socket_addrs().unwrap().nth(0)
+        },
+        _ => None,
+    };
+    let mut stream = Tcp::new(tcpstream);
+    let addr_ok = match addr {
+        Some(addr) => socks5::success_reply(&mut stream,addr).is_ok(),
+        None => false,
+    };
+    if !addr_ok{ stream.shutdown();}
+    while addr_ok {
+        let buf = match port.read() {
+            PortMessage::Data(buf) => buf,
+            PortMessage::ShutdownWrite =>{
+                stream.shutdown_write;
+                break
+            },
+            _ => {
+                stream.shutdown();
+                break
+            },
+        };
+
+        match stream.write(&buf[..]) {
+            Ok(_) => ,
+            Err(_) => {
+                stream.shutdown();
+                break
+            },
+        }
+    }
+}
+
 fn tunnel_tcp_recv( receiver: TcpStream,
                    core_tx: SyncSender<Message>) {
     let mut stream = Tcp::new(receiver);

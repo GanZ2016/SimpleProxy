@@ -7,3 +7,5 @@ authors = ["GanZ2016 <ganzhang@u.northwestern.edu>"]
 rust-crypto = "0.2.36"
 time = "*"
 log = "*"
+getopts = "0.2.14"
+crc = "1.4.0"
