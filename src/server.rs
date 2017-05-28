@@ -222,12 +222,7 @@ fn tunnel_port_task(read_port: TunnelReadPort, write_port: TunnelWritePort) {
 fn tunnel_tcp_recv(receiver: TcpStream,
                    core_tx: SyncSender<Message>) {
     let mut stream = Tcp::new(receiver);
-    match tunnel_recv_loop(&core_tx, &mut stream) {
-        Ok(_) => {},
-        Err(e) => {
-
-        }
-    };
+    tunnel_recv_loop(&core_tx, &mut stream).unwrap();
     stream.shutdown();
     core_tx.send(Message::CloseTunnel).unwrap();
 }
@@ -290,12 +285,7 @@ pub fn tunnel_core_task(sender: TcpStream){
     let mut stream = Tcp::new(sender);
     let mut port_map = PortMap::new();
 
-    match tunnel_loop(&core_tx, &core_rx, &mut stream, &mut port_map){
-        Ok(_) => {},
-        Err(e) =>{
-
-        }
-    };
+    tunnel_loop(&core_tx, &core_rx, &mut stream, &mut port_map).unwrap();
 
     stream.shutdown();
     for (_, value) in port_map.iter() {
