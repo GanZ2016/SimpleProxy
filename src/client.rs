@@ -347,8 +347,6 @@ fn tunnel_loop(tid: u32,
                port_map: &mut PortMap)
     -> Result<(), TcpError> {
 
-
-
     let timer = Timer::new(HEARTBEAT_INTERVAL_MS);
     let mut alive_time = time::get_time();
 
