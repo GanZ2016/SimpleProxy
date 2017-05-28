@@ -1,7 +1,7 @@
 //reference 
 //http://wsfdl.com/python/2016/08/19/SS5_protocol.html
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddrV4, SocketAddr, Shutdown,TcpStream};
+use std::net::{Ipv4Addr, SocketAddrV4, SocketAddr, Shutdown,TcpStream};
 use std::io::Error;
 use std::io::{Read,Write};
 
@@ -59,7 +59,7 @@ impl Tcp {
             buf.set_len(size);
             }
         match self.read_buf(&mut buf) {
-            Ok(expr) => return Ok(buf),
+            Ok(_) => return Ok(buf),
             Err(e) => return Err(e),
         }
     }
@@ -98,7 +98,7 @@ impl Tcp {
     pub fn read_u16(&mut self) -> Result<u16, TcpError> {
         let mut buf = [0u8; 2];
         try!(self.read_buf(&mut buf));
-        let mut res = 0 as u16;
+        let res = 0 as u16;
         Tcp::set_u16(&mut buf, res);
         return Ok(res);
     }
@@ -111,7 +111,7 @@ impl Tcp {
     pub fn read_u32(&mut self) -> Result<u32, TcpError> {
         let mut buf = [0u8; 4];
         try!(self.read_buf(&mut buf));
-        let mut res = 0 as u32;
+        let res = 0 as u32;
         Tcp::set_u32(&mut buf, res);
         return Ok(res);
     }

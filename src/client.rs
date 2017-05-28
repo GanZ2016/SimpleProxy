@@ -94,24 +94,24 @@ impl TunnelWritePort {
     }
 
     pub fn connect(&self, buf: Vec<u8>) {
-        let _ = self.tx.send(Message::CSConnect(self.port_id, buf)).unwrap();
+        self.tx.send(Message::CSConnect(self.port_id, buf)).unwrap();
     }
 
     pub fn connect_domain_name(&self, buf: Vec<u8>, port: u16) {
-        let _ = self.tx.send(Message::CSConnectDN(self.port_id, buf, port)).unwrap();
+        self.tx.send(Message::CSConnectDN(self.port_id, buf, port)).unwrap();
     }
     pub fn shutdown_write(&self) {
-        let _ = self.tx.send(Message::CSShutdownWrite(self.port_id)).unwrap();
+        self.tx.send(Message::CSShutdownWrite(self.port_id)).unwrap();
     }
 
     pub fn close(&self) {
-        let _ = self.tx.send(Message::CSClosePort(self.port_id)).unwrap();
+        self.tx.send(Message::CSClosePort(self.port_id)).unwrap();
     }
 
 }
 impl Drop for TunnelWritePort {
     fn drop(&mut self) {
-        let _ = self.tx.send(Message::PortDrop(self.port_id)).unwrap();
+        self.tx.send(Message::PortDrop(self.port_id)).unwrap();
     }
 }
 
@@ -126,7 +126,7 @@ impl TunnelReadPort {
 
 impl Drop for TunnelReadPort {
     fn drop(&mut self) {
-        let _ = self.tx.send(Message::PortDrop(self.port_id)).unwrap();
+        self.tx.send(Message::PortDrop(self.port_id)).unwrap();
     }
 }
 
@@ -231,23 +231,23 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
         let id = try!(stream.read_u32());
         match op {
             sc::CLOSE_PORT => {
-                let _ = core_tx.send(Message::SCClosePort(id)).unwrap();
+                core_tx.send(Message::SCClosePort(id)).unwrap();
             },
 
             sc::SHUTDOWN_WRITE => {
-                let _ = core_tx.send(Message::SCShutdownWrite(id)).unwrap();
+                core_tx.send(Message::SCShutdownWrite(id)).unwrap();
             },
 
             sc::CONNECT_OK => {
                 let len = try!(stream.read_u32());
                 let buf = try!(stream.read_size(len as usize));
-                let _ = core_tx.send(Message::SCConnectOk(id, buf)).unwrap();
+                core_tx.send(Message::SCConnectOk(id, buf)).unwrap();
             },
 
             sc::DATA => {
                 let len = try!(stream.read_u32());
                 let buf = try!(stream.read_size(len as usize));
-                let _ = core_tx.send(Message::SCData(id, buf)).unwrap();
+                core_tx.send(Message::SCData(id, buf)).unwrap();
             },
 
             _ => break
