@@ -13,14 +13,19 @@ fn main()  {
     let mut opts = Options::new();
     // pub fn reqopt(&mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
     //                          -> &mut Options
-    opts.reqopt("l", "listen address", "set listen-address","L_ADDR");
+    opts.reqopt("l", "listen address", "set listen-address","listen-address");
     let matches = match opts.parse(&args[1..]) {
-        Ok(m) => { m }
+        Ok(m) => { 
+            //m;
+            println!("listening {}",m.opt_str("l").unwrap());
+            m
+         },
         Err(_) => { 
-            print!("l");
+            println!("usage: -l listen-address");
             return 
-            }
+            },
     };
+    
     matches.opt_str("l").expect("wrong address");
     let l_addr = matches.opt_str("l").unwrap();
     // Creates a new `TcpListener` which will be bound to the specified
