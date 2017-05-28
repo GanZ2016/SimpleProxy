@@ -84,25 +84,40 @@ impl Clone for Tunnel {
 
 impl TunnelWritePort {
     fn connect_ok(&self, buf: Vec<u8>) {
-        self.tx.send(Message::SCConnectOk(self.port_id, buf)).unwrap();
+        match self.tx.send(Message::SCConnectOk(self.port_id, buf)){
+            Ok(_) => {},
+            Err(_) => {}
+        };
     }
 
     fn write(&self, buf: Vec<u8>) {
-        self.tx.send(Message::SCData(self.port_id, buf)).unwrap();
+        match self.tx.send(Message::SCData(self.port_id, buf)){
+            Ok(_) => {},
+            Err(_) => {}
+        };
     }
 
     fn shutdown_write(&self) {
-        self.tx.send(Message::SCShutdownWrite(self.port_id)).unwrap();
+        match self.tx.send(Message::SCShutdownWrite(self.port_id)){
+            Ok(_) => {},
+            Err(_) => {}
+        };
     }
 
     fn close(&self) {
-        self.tx.send(Message::SCClosePort(self.port_id)).unwrap();
+        match self.tx.send(Message::SCClosePort(self.port_id)){
+            Ok(_) => {},
+            Err(_) => {}
+        };
     }
 
 }
 impl Drop for TunnelWritePort {
     fn drop(&mut self) {
-        self.tx.send(Message::PortDrop(self.port_id)).unwrap();
+        match self.tx.send(Message::PortDrop(self.port_id)){
+            Ok(_) => {},
+            Err(_) => {}
+        };
     }
 }
 
@@ -114,7 +129,10 @@ impl TunnelReadPort {
 
 impl Drop for TunnelReadPort {
     fn drop(&mut self) {
-        let _ = self.tx.send(Message::PortDrop(self.port_id));
+        match self.tx.send(Message::PortDrop(self.port_id)){
+            Ok(_) => {},
+            Err(_) => {}
+        };
     }
 }
 
@@ -204,7 +222,10 @@ fn tunnel_port_task(read_port: TunnelReadPort, write_port: TunnelWritePort) {
     match s.local_addr() {
         Ok(addr) => {
             let mut buf = Vec::new();
-            write!(&mut buf, "{}", addr).unwrap();
+            match write!(&mut buf, "{}", addr){
+                Ok(_) => {},
+                Err(_) => {}
+            };
             write_port.connect_ok(buf);
         },
         Err(_) => {
@@ -222,9 +243,15 @@ fn tunnel_port_task(read_port: TunnelReadPort, write_port: TunnelWritePort) {
 fn tunnel_tcp_recv(receiver: TcpStream,
                    core_tx: SyncSender<Message>) {
     let mut stream = Tcp::new(receiver);
-    tunnel_recv_loop(&core_tx, &mut stream).unwrap();
+    match tunnel_recv_loop(&core_tx, &mut stream){
+        Ok(_) => {},
+        Err(_) => {}
+    };
     stream.shutdown();
-    core_tx.send(Message::CloseTunnel).unwrap();
+    match core_tx.send(Message::CloseTunnel){
+        Ok(_) => {},
+        Err(_) => {}
+    };
 }
 
 fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
@@ -239,20 +266,32 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
     loop {
         let op = try!(stream.read_u8());
         if op == cs::HEARTBEAT {
-            core_tx.send(Message::CSHeartbeat).unwrap();
+            match core_tx.send(Message::CSHeartbeat){
+                Ok(_) => {},
+                Err(_) => {}
+            };
             continue
         }
 
         let id = try!(stream.read_u32());
         match op {
             cs::OPEN_PORT => {
-                core_tx.send(Message::CSOpenPort(id)).unwrap();
+                match core_tx.send(Message::CSOpenPort(id)){
+                    Ok(_) => {},
+                    Err(_) => {}
+                };
             },
             cs::CLOSE_PORT => {
-                core_tx.send(Message::CSClosePort(id)).unwrap();
+                match core_tx.send(Message::CSClosePort(id)){
+                    Ok(_) => {},
+                    Err(_) => {}
+                };
             },
             cs::SHUTDOWN_WRITE => {
-                core_tx.send(Message::CSShutdownWrite(id)).unwrap();
+                match core_tx.send(Message::CSShutdownWrite(id)){
+                    Ok(_) => {},
+                    Err(_) => {}
+                };
             },
 
             cs::CONNECT_DOMAIN_NAME => {
@@ -260,13 +299,19 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
                 let buf = try!(stream.read_size((len - 2) as usize));
                 let port = try!(stream.read_u16());
                 let domain_name = buf.clone();
-                core_tx.send(Message::CSConnectDN(id, domain_name, port)).unwrap();
+                match core_tx.send(Message::CSConnectDN(id, domain_name, port)){
+                    Ok(_) => {},
+                    Err(_) => {}
+                };
             },
 
             _ => {
                 let len = try!(stream.read_u32());
                 let buf = try!(stream.read_size(len as usize));
-                core_tx.send(Message::CSData(op, id, buf)).unwrap();
+                match core_tx.send(Message::CSData(op, id, buf)){
+                    Ok(_) => {},
+                    Err(_) => {}
+                };
             }
         }
     }
@@ -285,11 +330,17 @@ pub fn tunnel_core_task(sender: TcpStream){
     let mut stream = Tcp::new(sender);
     let mut port_map = PortMap::new();
 
-    tunnel_loop(&core_tx, &core_rx, &mut stream, &mut port_map).unwrap();
+    match tunnel_loop(&core_tx, &core_rx, &mut stream, &mut port_map){
+        Ok(_) => {},
+        Err(_) => {}
+    };
 
     stream.shutdown();
     for (_, value) in port_map.iter() {
-        value.tx.send(PortMessage::ClosePort).unwrap();
+        match value.tx.send(PortMessage::ClosePort){
+            Ok(_) => {},
+            Err(_) => {}
+        };
     }
 }
 fn tunnel_loop(core_tx: &SyncSender<Message>,
@@ -334,7 +385,10 @@ fn tunnel_loop(core_tx: &SyncSender<Message>,
                 Message::CSClosePort(id) => {
                     alive_time = time::get_time();
                     port_map.get(&id).map(|value| {
-                        value.tx.send(PortMessage::ClosePort).unwrap();
+                        match value.tx.send(PortMessage::ClosePort){
+                            Ok(_) => {},
+                            Err(_) => {}
+                        };
                     });
 
                     port_map.remove(&id);
@@ -343,26 +397,38 @@ fn tunnel_loop(core_tx: &SyncSender<Message>,
                 Message::CSConnectDN(id, buf, port) => {
                     alive_time = time::get_time();
                     port_map.get(&id).map(move |value| {
-                        value.tx.send(PortMessage::ConnectDN(buf, port)).unwrap();
+                        match value.tx.send(PortMessage::ConnectDN(buf, port)){
+                            Ok(_) => {},
+                            Err(_) => {}
+                        };
                     });
                 },
 
                 Message::CSShutdownWrite(id) => {
                     alive_time = time::get_time();
                     port_map.get(&id).map(|value| {
-                        value.tx.send(PortMessage::ShutdownWrite).unwrap();
+                        match value.tx.send(PortMessage::ShutdownWrite){
+                            Ok(_) => {},
+                            Err(_) => {}
+                        };
                     });
                 },
 
                 Message::CSData(op, id, buf) => {
                     alive_time = time::get_time();
                     port_map.get(&id).map(move |value| {
-                        value.tx.send(PortMessage::Data(op, buf)).unwrap();
+                        match value.tx.send(PortMessage::Data(op, buf)){
+                            Ok(_) => {},
+                            Err(_) => {}
+                        };
                     });
                 },
                 Message::SCClosePort(id) => {
                     let res = port_map.get(&id).map(|value| {
-                        value.tx.send(PortMessage::ClosePort).unwrap();
+                        match value.tx.send(PortMessage::ClosePort){
+                            Ok(_) => {},
+                            Err(_) => {}
+                        };
 
                         try!(stream.write_u8(sc::CLOSE_PORT));
                         try!(stream.write_u32(id));
