@@ -5,6 +5,7 @@
 extern crate log;
 extern crate time;
 
+pub mod logger;
 pub mod socks5;
 pub mod server;
 pub mod client;
