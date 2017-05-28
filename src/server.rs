@@ -223,7 +223,7 @@ fn tunnel_tcp_recv(receiver: TcpStream,
                    core_tx: SyncSender<Message>) {
     let mut stream = Tcp::new(receiver);
     match tunnel_recv_loop(&core_tx, &mut stream) {
-        Ok() => {},
+        Ok(_) => {},
         Err(e) => {
 
         }
@@ -292,7 +292,7 @@ pub fn tunnel_core_task(sender: TcpStream){
 
     match tunnel_loop(&core_tx, &core_rx, &mut stream, &mut port_map){
         Ok(_) => {},
-        TcpErr(e) =>{
+        Err(e) =>{
 
         }
     };
