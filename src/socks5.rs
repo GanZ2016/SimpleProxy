@@ -2,9 +2,8 @@
 //http://wsfdl.com/python/2016/08/19/SS5_protocol.html
 
 use std::net::{Ipv4Addr, SocketAddrV4, SocketAddr, Shutdown,TcpStream};
-use std::io::Error;
-use std::io::{Read,Write};
-
+use std::io::{Read,Write,Error};
+use std::vec::Vec;
 const SOCK_V5:u8 = 5;
 const RSV: u8 = 0;
 const ATYP_IP_V4: u8 = 1;
@@ -88,32 +87,30 @@ impl Tcp {
         return Ok(buf[0]);
     }
 
-    // Tcp::set_16 u8 -> vector to u16
-    //http://stackoverflow.com/questions/33968870/temporarily-transmute-u8-to-u16
-    pub fn set_u16(a: &mut [u8], v: u16) {
-        a[0] = v as u8;
-        a[1] = (v >> 8) as u8;
-    }
+    // // Tcp::set_16 u8 -> vector to u16
+    // //http://stackoverflow.com/questions/33968870/temporarily-transmute-u8-to-u16
+    // pub fn set_u16(a: &mut [u8], mut v: u16) {
+    //     a[0] = v as u8;
+    //     a[1] = (v >> 8) as u8;
+    // }
     // Tcp::read_u16 -> read at most 16 bits
     pub fn read_u16(&mut self) -> Result<u16, TcpError> {
         let mut buf = [0u8; 2];
         try!(self.read_buf(&mut buf));
-        let res = 0 as u16;
-        Tcp::set_u16(&mut buf, res);
-        return Ok(res);
+        let res = unsafe { *(buf.as_ptr() as *const u16)};
+        return Ok(u16::from_be(res));
     }
-    pub fn set_u32(a: &mut [u8], v: u32) {
-        a[0] = v as u8;
-        a[1] = (v >> 8) as u8;
-        a[2] = (v >> 8) as u8;
-        a[3] = (v >> 8) as u8;
-    }
+    // pub fn set_u32(a: &mut [u8], mut v: u32) {
+    //     a[0] = v as u8;
+    //     a[1] = (v >> 8) as u8;
+    //     a[2] = (v >> 8) as u8;
+    //     a[3] = (v >> 8) as u8;
+    // }
     pub fn read_u32(&mut self) -> Result<u32, TcpError> {
         let mut buf = [0u8; 4];
         try!(self.read_buf(&mut buf));
-        let res = 0 as u32;
-        Tcp::set_u32(&mut buf, res);
-        return Ok(res);
+        let res = unsafe { *(buf.as_ptr() as *const u32)};
+        return Ok(u32::from_be(res));
     }
 
     pub fn shutdown(&mut self) {
@@ -150,12 +147,12 @@ impl Tcp {
     pub fn write_u16(&mut self, v: u16) -> Result<(),TcpError> {
         let mut buf = [0u8;2];
         // let mut res = 0 as u16;
-        Tcp::set_u16(&mut buf, v);
+        unsafe { *(buf.as_ptr() as *mut u16) = v.to_be(); }
         self.write(&buf)
     }
     pub fn write_u32(&mut self, v: u32) -> Result<(),TcpError> {
         let mut buf = [0u8;4];
-        Tcp::set_u32(&mut buf, v);
+        unsafe { *(buf.as_ptr() as *mut u32) = v.to_be(); }
         self.write(&buf)
     }
 
@@ -342,3 +339,17 @@ pub fn failure_reply(stream: &mut Tcp, addr:SocketAddr) -> Result<(),TcpError> {
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0,0,0,0),0));
     return get_reply(stream,addr,0 as u8);
 }
+
+// #[test]
+// fn test_set_u32() {
+//     let mut a =[0u8;4];
+//     a[0] = 0xD8 as u8;
+//     a[1] = 0xEC as u8;
+//     a[2] = 0xA2 as u8;
+//     a[3] = 0x83 as u8;
+//     let b  = 0xD8ECA283 as u32;
+//     let mut aa = read_u32(a);
+//     Tcp::set_u32(&mut a,aa);
+//     assert_eq!(aa,b );
+
+// }
