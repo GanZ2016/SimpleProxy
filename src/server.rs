@@ -9,7 +9,7 @@ use time;
 use super::timer::Timer;
 use super::socks5::{Tcp,TcpError};
 use super::protocol::{
-    VERIFY_DATA, cs, sc,
+    cs, sc,
     HEARTBEAT_INTERVAL_MS,
     ALIVE_TIMEOUT_TIME_MS
 };
@@ -258,11 +258,6 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
                     stream: &mut Tcp) -> Result<(), TcpError> {
 
 
-    let buf = try!(stream.read_size(VERIFY_DATA.len()));
-
-    if &buf[..] != &VERIFY_DATA[..] {
-        return Err(TcpError::ErrorData);
-    }
     loop {
         let op = try!(stream.read_u8());
         if op == cs::HEARTBEAT {

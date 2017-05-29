@@ -11,8 +11,6 @@ pub mod server;
 pub mod client;
 pub mod timer;
 mod protocol {
-    pub const VERIFY_DATA: [u8; 8] =
-        [0xF0u8, 0xEF, 0xE, 0x2, 0xAE, 0xBC, 0x8C, 0x78];
     pub const HEARTBEAT_INTERVAL_MS: u32 = 5000;
     pub const ALIVE_TIMEOUT_TIME_MS: i64 = 60000;
 

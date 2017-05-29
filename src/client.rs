@@ -11,7 +11,7 @@ use time;
 use super::timer::Timer;
 use super::socks5::{Tcp,TcpError,success_reply,failure_reply,ConnectInfo,connect_target};
 use super::protocol::{
-    VERIFY_DATA, cs, sc,
+    cs, sc,
     HEARTBEAT_INTERVAL_MS,
     ALIVE_TIMEOUT_TIME_MS
 };
