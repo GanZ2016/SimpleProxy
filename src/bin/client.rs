@@ -35,7 +35,7 @@ fn start_tunnels(l_addr: String, s_addr:String,tunnel_count:u32) {
 
     
     println!("connecting to {}", s_addr.as_str());
-    //info!("starting up");
+    info!("starting up");
     // Returns an iterator over the connections being received on this listener.
     for stream in new_listener.incoming() {
         match stream {

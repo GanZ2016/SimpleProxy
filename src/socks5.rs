@@ -340,16 +340,3 @@ pub fn failure_reply(stream: &mut Tcp, addr:SocketAddr) -> Result<(),TcpError> {
     return get_reply(stream,addr,0 as u8);
 }
 
-// #[test]
-// fn test_set_u32() {
-//     let mut a =[0u8;4];
-//     a[0] = 0xD8 as u8;
-//     a[1] = 0xEC as u8;
-//     a[2] = 0xA2 as u8;
-//     a[3] = 0x83 as u8;
-//     let b  = 0xD8ECA283 as u32;
-//     let mut aa = read_u32(a);
-//     Tcp::set_u32(&mut a,aa);
-//     assert_eq!(aa,b );
-
-// }
