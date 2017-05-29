@@ -82,8 +82,8 @@ impl Tunnel {
 
         let (tx, rx) = channel();
         match self.core_tx.send(Message::CSOpenPort(id, tx)){
-            Ok(_) =>{},
-            Err(e) =>{}
+            Ok(_) => {},
+            Err(_) => {}
         };
 
         (TunnelWritePort { port_id: id, tx: core_tx1 },
