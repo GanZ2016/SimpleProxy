@@ -8,11 +8,8 @@ use std::env;
 use std::thread;
 use std::net::{TcpListener,TcpStream};
 use std::str::from_utf8;
-use SimpleProxy::client::Tunnel;
-use SimpleProxy::client::TunnelReadPort;
-use SimpleProxy::client::TunnelWritePort;
-use SimpleProxy::client::PortMessage;
-use SimpleProxy::client::tunnel_write_port;
+use SimpleProxy::client::{Tunnel,TunnelReadPort,TunnelWritePort, PortMessage, tunnel_write_port};
+
 use SimpleProxy::logger;
 
 use SimpleProxy::socks5::Tcp;

@@ -40,6 +40,7 @@ impl Tcp {
 
     // Tcp::read_buf -> pull some bytes from Tcp into the specified buffer(vector of u8)
     pub fn read_buf(&mut self, buf: &mut [u8]) ->Result<(),TcpError>{
+        
         let mut l = 0;
         while l < buf.len() {
             match self.stream.read(&mut buf[l..]) {
@@ -57,10 +58,8 @@ impl Tcp {
         unsafe {
             buf.set_len(size);
             }
-        match self.read_buf(&mut buf) {
-            Ok(_) => return Ok(buf),
-            Err(e) => return Err(e),
-        }
+        try!(self.read_buf(&mut buf[..]));
+        Ok(buf)
     }
 
     pub fn read_at_most(&mut self, size: usize) -> Result<Vec<u8>, TcpError> {
@@ -114,15 +113,24 @@ impl Tcp {
     }
 
     pub fn shutdown(&mut self) {
-        self.stream.shutdown(Shutdown::Both);
+        match self.stream.shutdown(Shutdown::Both){
+            Ok(_) =>{},
+            Err(_) => {},
+        };
     }
 
     pub fn shutdown_write(&mut self) {
-        self.stream.shutdown(Shutdown::Write);
+        match self.stream.shutdown(Shutdown::Write){
+            Ok(_) =>{},
+            Err(_) => {},
+        };
     }
 
     pub fn shutdown_read(&mut self) {
-        self.stream.shutdown(Shutdown::Read);
+        match self.stream.shutdown(Shutdown::Read){
+            Ok(_) =>{},
+            Err(_) => {},
+        };
     }
 
 
@@ -244,6 +252,9 @@ pub fn get_method(stream: &mut Tcp) -> Result<u8,TcpError> {
 pub fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
     let method = try!(get_method(stream)); // get method(0)
     try!(stream.write(&[SOCK_V5, method])); 
+    if method != METHOD_NO_AUTH {
+        return Ok(ConnectInfo::Unknown);
+    }
     let mut recv = [0u8;4];
     try!(stream.read_buf(&mut recv));
     if recv[0] != SOCK_V5 || recv[2] != RSV {
@@ -284,6 +295,7 @@ pub fn connect_target(stream: &mut Tcp) -> Result<ConnectInfo,TcpError> {
             return Ok(ConnectInfo::Unknown);
         }
     }
+    //return Ok(addr_type);
 }
 
 //  TODO: The SOCK server evaluates the request and establishes 
@@ -332,11 +344,11 @@ pub fn get_reply(stream: &mut Tcp, addr: SocketAddr, rep_info:u8) -> Result<(),T
 }
 
 pub fn success_reply(stream: &mut Tcp, addr:SocketAddr) -> Result<(),TcpError> {
-    return get_reply(stream,addr,1 as u8);
+    return get_reply(stream,addr,0 as u8);
 }
 
 pub fn failure_reply(stream: &mut Tcp, addr:SocketAddr) -> Result<(),TcpError> {
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0,0,0,0),0));
-    return get_reply(stream,addr,0 as u8);
+    return get_reply(stream,addr,1 as u8);
 }
 
