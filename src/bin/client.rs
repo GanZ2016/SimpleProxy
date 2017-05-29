@@ -1,3 +1,5 @@
+#[macro_use]
+
 extern crate getopts;
 extern crate SimpleProxy;
 extern crate log;
@@ -25,8 +27,15 @@ fn start_tunnels(l_addr: String, s_addr:String,tunnel_count:u32) {
         tunnels.push(new_tunnel);
     }
     let mut index = 0;
+    // let new_listener = match TcpListener::bind(l_addr.as_str()).unwrap() {
+    //     Ok (_)=> {},
+    //     Err(_) => {panic!("can't bind to {}", l_addr.as_str());},
+    // };
     let new_listener = TcpListener::bind(l_addr.as_str()).unwrap();
-    println!("connecting to {}", l_addr.as_str());
+
+    
+    println!("connecting to {}", s_addr.as_str());
+    //info!("starting up");
     // Returns an iterator over the connections being received on this listener.
     for stream in new_listener.incoming() {
         match stream {

@@ -21,12 +21,12 @@ fn main()  {
             m
          },
         Err(_) => { 
-            println!("usage: -l listen-address");
+            println!("{}", opts.short_usage(&program));
             return 
             },
     };
     
-    matches.opt_str("l").expect("wrong address");
+    //matches.opt_str("l").expect("wrong address");
     let l_addr = matches.opt_str("l").unwrap();
     // Creates a new `TcpListener` which will be bound to the specified
     // address.
@@ -39,7 +39,7 @@ fn main()  {
                 println!("new client!");
                 Tunnel::new(stream);
             },
-            Err(_) => {println!("connection failed!");}
+            Err(_) => {}
         }
     }
 }
