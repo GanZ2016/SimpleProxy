@@ -4,12 +4,11 @@ use std::vec::Vec;
 use std::time::Duration;
 use std::collections::HashMap;
 use std::net::{TcpStream,ToSocketAddrs};
-use std::env;
 use std::io::Write;
 use std::str::from_utf8;
 use time;
 use super::timer::Timer;
-use super::socks5::{Tcp,TcpError,success_reply,failure_reply,ConnectInfo,connect_target};
+use super::socks5::{Tcp,TcpError,success_reply,ConnectInfo,connect_target};
 use super::protocol::{
     cs, sc,
     HEARTBEAT_INTERVAL_MS,
@@ -95,34 +94,34 @@ impl TunnelWritePort {
     pub fn write(&self, buf: Vec<u8>) {
         match self.tx.send(Message::CSData(self.port_id,buf)){
             Ok(_) =>{},
-            Err(e) =>{}
+            Err(_) =>{}
         };
     }
 
     pub fn connect(&self, buf: Vec<u8>) {
         match self.tx.send(Message::CSConnect(self.port_id, buf)){
             Ok(_) =>{},
-            Err(e) => {}
+            Err(_) => {}
         };
     }
 
     pub fn connect_domain_name(&self, buf: Vec<u8>, port: u16) {
         match self.tx.send(Message::CSConnectDN(self.port_id, buf, port)){
             Ok(_) => {},
-            Err(e) => {}
+            Err(_) => {}
         }
     }
     pub fn shutdown_write(&self) {
         match self.tx.send(Message::CSShutdownWrite(self.port_id)){
             Ok(_) => {},
-            Err(e) => {} 
+            Err(_) => {} 
         }
     }
 
     pub fn close(&self) {
         match self.tx.send(Message::CSClosePort(self.port_id)){
             Ok(_) => {},
-            Err(e) => {}
+            Err(_) => {}
         }
     }
 
@@ -131,7 +130,7 @@ impl Drop for TunnelWritePort {
     fn drop(&mut self) {
         match self.tx.send(Message::PortDrop(self.port_id)){
             Ok(_) =>{},
-            Err(e) => {}
+            Err(_) => {}
         };
     }
 }
@@ -149,7 +148,7 @@ impl Drop for TunnelReadPort {
     fn drop(&mut self) {
         match self.tx.send(Message::PortDrop(self.port_id)){
             Ok(_) =>{},
-            Err(e) =>{}
+            Err(_) =>{}
         };
     }
 }
@@ -196,7 +195,7 @@ pub fn tunnel_write_port(tcpstream: TcpStream, write_port: TunnelWritePort, read
     match connect_target(&mut stream) {
         Ok(ConnectInfo::Addr(addr)) => {
             let mut buf = Vec::new();
-            write!(&mut buf, "{}", addr);
+            let _ =write!(&mut buf, "{}", addr);
             write_port.connect(buf);
         },
        Ok(ConnectInfo::Domain(domain_name,port)) => {
@@ -215,7 +214,7 @@ pub fn tunnel_write_port(tcpstream: TcpStream, write_port: TunnelWritePort, read
         tunnel_read_port(tcpstream,read_port);
     });
     //Write data through write_port until EoF or error
-    while true {
+    loop {
         match stream.read_at_most(1024) {
             Ok(buf) => {
                 write_port.write(buf);
@@ -334,7 +333,7 @@ fn tunnel_core_task(tid: u32, server_addr: String,
     for (_, value) in port_map.iter() {
         match value.tx.send(PortMessage::ClosePort){
             Ok(_) => {},
-            Err(e) => {}
+            Err(_) => {}
         }
     }
 

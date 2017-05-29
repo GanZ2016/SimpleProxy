@@ -153,13 +153,13 @@ impl Tcp {
     }
     //Tcp::write_u16 -> write at most 16 bits
     pub fn write_u16(&mut self, v: u16) -> Result<(),TcpError> {
-        let mut buf = [0u8;2];
+        let buf = [0u8;2];
         // let mut res = 0 as u16;
         unsafe { *(buf.as_ptr() as *mut u16) = v.to_be(); }
         self.write(&buf)
     }
     pub fn write_u32(&mut self, v: u32) -> Result<(),TcpError> {
-        let mut buf = [0u8;4];
+        let buf = [0u8;4];
         unsafe { *(buf.as_ptr() as *mut u32) = v.to_be(); }
         self.write(&buf)
     }
@@ -338,7 +338,7 @@ pub fn get_reply(stream: &mut Tcp, addr: SocketAddr, rep_info:u8) -> Result<(),T
             try!(stream.write(&buf));
             try!(stream.write_u16(ipv4.port()));
         },
-        SocketAddr::V6(ipv6) => panic!("Found ipv6 Address"),
+        SocketAddr::V6(_) => panic!("Found ipv6 Address"),
     }
     Ok(())
 }
@@ -347,7 +347,7 @@ pub fn success_reply(stream: &mut Tcp, addr:SocketAddr) -> Result<(),TcpError> {
     return get_reply(stream,addr,0 as u8);
 }
 
-pub fn failure_reply(stream: &mut Tcp, addr:SocketAddr) -> Result<(),TcpError> {
+pub fn failure_reply(stream: &mut Tcp) -> Result<(),TcpError> {
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0,0,0,0),0));
     return get_reply(stream,addr,1 as u8);
 }

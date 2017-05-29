@@ -3,7 +3,6 @@ use std::thread;
 use std::vec::Vec;
 use std::str::from_utf8;
 use std::collections::HashMap;
-use std::time::Duration;
 use std::net::{TcpStream,SocketAddr,lookup_host};
 use time;
 use super::timer::Timer;
@@ -13,7 +12,7 @@ use super::protocol::{
     HEARTBEAT_INTERVAL_MS,
     ALIVE_TIMEOUT_TIME_MS
 };
-use std::io::{Read,Write};
+use std::io::Write;
 
 
 // Enumeration Type of Message Transfer in Tunnel
