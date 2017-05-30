@@ -80,7 +80,7 @@ impl Clone for Tunnel {
     }
 }
 
-
+/// Write message to sync_channel to do different operations.
 impl TunnelWritePort {
     fn connect_ok(&self, buf: Vec<u8>) {
         match self.tx.send(Message::SCConnectOk(self.port_id, buf)){

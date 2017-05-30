@@ -64,6 +64,21 @@ struct PortMapValue {
 
 type PortMap = HashMap<u32, PortMapValue>;
 impl Tunnel {
+    /// Returns a tunnel which has one sync_channel 
+    /// Based on the SSH remote port forwarding
+    ///
+    /// # Arguments
+    /// 
+    /// * `tid` - A unsigned integer of 32bit that shows the index of tunnel
+    /// * `server_add`` - A IPv4 address including port that server is listening.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use doc::Tunnel;
+    /// let new_tunnel = Tunnel::new(0,'127.0.0.1:1080');
+    /// ```
+    
     pub fn new(tid:u32, server_addr: String) ->Tunnel {
         let (tx,rx) = sync_channel(10000);
         let tx2 = tx.clone();
@@ -73,6 +88,15 @@ impl Tunnel {
         });
         Tunnel {tunnel_id:1,core_tx:tx2}
     }
+    /// For each web request open a corresponding port
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use doc::Tunnel;
+    /// let new_tunnel = Tunnel::new(0,'127.0.0.1:1080');
+    /// let (write_port, read_port) = new_tunnel.open_port();
+    /// ```
      pub fn open_port(&mut self) -> (TunnelWritePort, TunnelReadPort) {
         let core_tx1 = self.core_tx.clone();
         let core_tx2 = self.core_tx.clone();
@@ -91,6 +115,7 @@ impl Tunnel {
 } 
 
 impl TunnelWritePort {
+    ///
     pub fn write(&self, buf: Vec<u8>) {
         match self.tx.send(Message::CSData(self.port_id,buf)){
             Ok(_) =>{},
@@ -233,7 +258,7 @@ pub fn tunnel_write_port(tcpstream: TcpStream, write_port: TunnelWritePort, read
         }
     }
 }
-
+/// Tcp listener for client. Extracting the header and process data.
 fn tunnel_tcp_recv( receiver: TcpStream,
                    core_tx: SyncSender<Message>) {
     let mut stream = Tcp::new(receiver);
