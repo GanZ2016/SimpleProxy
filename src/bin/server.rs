@@ -36,7 +36,7 @@ fn main()  {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                println!("new client!");
+                println!("new stream!");
                 Tunnel::new(stream);
             },
             Err(_) => {}

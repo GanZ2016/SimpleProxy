@@ -313,6 +313,9 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
 
 
 pub fn tunnel_core_task(sender: TcpStream){
+    // Creates a new synchronous, bounded channel, with buffer size 10000.
+    // tx is the sending half (tx for transmission), and rx is the receiving
+    // half (rx for receiving).
     let (core_tx, core_rx) = sync_channel(10000);
     let receiver = sender.try_clone().unwrap();
     let core_tx2 = core_tx.clone();
@@ -337,6 +340,13 @@ pub fn tunnel_core_task(sender: TcpStream){
         };
     }
 }
+/// SyncSender<Message>
+/// The sending-half of Rust's synchronous channel type. This half can only be
+/// owned by one thread, but it can be cloned to send to other threads.
+
+/// Receiver<Message>
+/// The receiving-half of Rust's channel type. This half can only be owned by
+/// one thread
 fn tunnel_loop(core_tx: &SyncSender<Message>,
                core_rx: &Receiver<Message>, stream: &mut Tcp,
                port_map: &mut PortMap) -> Result<(), TcpError> 
@@ -354,13 +364,16 @@ fn tunnel_loop(core_tx: &SyncSender<Message>,
             },
 
             msg = core_rx.recv() => match msg.unwrap() {
-                Message::CSHeartbeat => {
-                   alive_time = time::get_time();
-                    try!(stream.write_u8(sc::HEARTBEAT_RSP));
-                },
+            Message::CSHeartbeat => {
+                alive_time = time::get_time();
+                try!(stream.write_u8(sc::HEARTBEAT_RSP));
+            },
 
             Message::CSOpenPort(id) => {
                     alive_time = time::get_time();
+        /// Creates a new asynchronous channel, returning the sender/receiver halves.
+        /// All data sent on the sender will become available on the receiver, and no
+        /// send will block the calling thread (this channel has an "infinite buffer").         
                     let (tx, rx) = channel();
                     port_map.insert(id, PortMapValue { count: 2, tx: tx });
 
