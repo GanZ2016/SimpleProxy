@@ -195,6 +195,8 @@ fn tunnel_port_task(read_port: TunnelReadPort, write_port: TunnelWritePort) {
                         let conn = match host {
                             SocketAddr::V4(addr_v4) =>
                                 TcpStream::connect((addr_v4.ip().clone(), port)),
+                            SocketAddr::V6(addr_v6) =>
+                                TcpStream::connect((addr_v6.ip().clone(), port)),
                         };
                         match conn {
                             Ok(s) => { stream = Some(s); break; },
