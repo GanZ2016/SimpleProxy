@@ -63,6 +63,7 @@ struct PortMapValue {
 }
 
 type PortMap = HashMap<u32, PortMapValue>;
+    /// Tunnel is the bridge connects client and server.
 impl Tunnel {
     /// Returns a tunnel which has one sync_channel 
     /// Based on the SSH remote port forwarding
@@ -76,7 +77,7 @@ impl Tunnel {
     ///
     /// ```
     /// use doc::Tunnel;
-    /// let new_tunnel = Tunnel::new(0,'127.0.0.1:1080');
+    /// let new_tunnel = Tunnel::new(0, "127.0.0.1:1080");
     /// ```
     
     pub fn new(tid:u32, server_addr: String) ->Tunnel {
@@ -94,7 +95,7 @@ impl Tunnel {
     ///
     /// ```
     /// use doc::Tunnel;
-    /// let new_tunnel = Tunnel::new(0,'127.0.0.1:1080');
+    /// let new_tunnel = Tunnel::new(0, "127.0.0.1:1080");
     /// let (write_port, read_port) = new_tunnel.open_port();
     /// ```
      pub fn open_port(&mut self) -> (TunnelWritePort, TunnelReadPort) {
@@ -113,16 +114,42 @@ impl Tunnel {
          TunnelReadPort { port_id: id, tx: core_tx2, rx: rx })
     }
 } 
-
+///  Extract message from port and send it to sync_channel.
 impl TunnelWritePort {
+    /// Writing data for a specific port to tunnel
     ///
+    /// # Arguments
+    ///
+    /// *`buf` - A vector of u8 that is the data sending to tunnel
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use doc::TunnelWritePort;
+    /// let (tx, rx) = channel();
+    /// let write_port = TunnelWritePort { port_id: 0, tx: tx }
+    /// let mut buf = Vec::new();
+    /// write_port.write(buf.clone());
+    /// assert_eq!(rx.recv().unwrap(), Message::CSData(0,buf));
+    /// ```
+
     pub fn write(&self, buf: Vec<u8>) {
         match self.tx.send(Message::CSData(self.port_id,buf)){
             Ok(_) =>{},
             Err(_) =>{}
         };
     }
-
+    /// Connect port in the tunnel
+    /// # Example
+    ///
+    /// ```
+    /// use doc::TunnelWritePort;
+    /// let (tx, rx) = channel();
+    /// let write_port = TunnelWritePort { port_id: 0, tx: tx }
+    /// let mut buf = Vec::new();
+    /// write_port.connect(buf.clone());
+    /// assert_eq!(rx.recv().unwrap(), Message::CSConnect(0,buf));
+    /// ```
     pub fn connect(&self, buf: Vec<u8>) {
         match self.tx.send(Message::CSConnect(self.port_id, buf)){
             Ok(_) =>{},
@@ -130,19 +157,51 @@ impl TunnelWritePort {
         };
     }
 
+    /// Connect domain name of a specific port through tunnel
+    /// # Example
+    ///
+    /// ```
+    /// use doc::TunnelWritePort;
+    /// let (tx, rx) = channel();
+    /// let write_port = TunnelWritePort { port_id: 0, tx: tx }
+    /// let mut buf = Vec::new();
+    /// write_port.connect_domain_name(buf.clone(),2020);
+    /// assert_eq!(rx.recv().unwrap(), Message::CSConnectDN(0,buf,2020));
+    /// ```
     pub fn connect_domain_name(&self, buf: Vec<u8>, port: u16) {
         match self.tx.send(Message::CSConnectDN(self.port_id, buf, port)){
             Ok(_) => {},
             Err(_) => {}
         }
     }
+    /// shutdown the writing of port.
+    /// # Example
+    ///
+    /// ```
+    /// use doc::TunnelWritePort;
+    /// let (tx, rx) = channel();
+    /// let write_port = TunnelWritePort { port_id: 0, tx: tx }
+    /// let mut buf = Vec::new();
+    /// write_port.connect_domain_name(0);
+    /// assert_eq!(rx.recv().unwrap(), Message::CSConnectDN(0));
+    /// ```
     pub fn shutdown_write(&self) {
         match self.tx.send(Message::CSShutdownWrite(self.port_id)){
             Ok(_) => {},
             Err(_) => {} 
         }
     }
-
+    /// close port.
+    /// # Example
+    ///
+    /// ```
+    /// use doc::TunnelWritePort;
+    /// let (tx, rx) = channel();
+    /// let write_port = TunnelWritePort { port_id: 0, tx: tx }
+    /// let mut buf = Vec::new();
+    /// write_port.close(0);
+    /// assert_eq!(rx.recv().unwrap(), Message::CSClosePort(0));
+    /// ```
     pub fn close(&self) {
         match self.tx.send(Message::CSClosePort(self.port_id)){
             Ok(_) => {},
@@ -151,6 +210,7 @@ impl TunnelWritePort {
     }
 
 }
+/// drop port
 impl Drop for TunnelWritePort {
     fn drop(&mut self) {
         match self.tx.send(Message::PortDrop(self.port_id)){
@@ -159,8 +219,10 @@ impl Drop for TunnelWritePort {
         };
     }
 }
-
+    /// TunnelReadPort got the message from TCP stream and send it to Tunnel Message handler
 impl TunnelReadPort {
+    /// Directly read portmessage.
+    ///
     pub fn read(&self) -> PortMessage {
         match self.rx.recv() {
             Ok(msg) => msg,
