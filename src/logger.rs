@@ -1,3 +1,4 @@
+//Reference https://doc.rust-lang.org/log/log/index.html
 use std::vec::Vec;
 use std::collections::vec_deque::VecDeque;
 use std::sync::{Arc, Mutex, Condvar};
