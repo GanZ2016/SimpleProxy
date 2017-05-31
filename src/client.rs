@@ -219,7 +219,7 @@ impl Drop for TunnelWritePort {
         };
     }
 }
-    /// TunnelReadPort got the message from TCP stream and send it to Tunnel Message handler
+    /// TunnelReadPort got the message from TCP stream and send it to port Message handler
 impl TunnelReadPort {
     /// Directly read portmessage.
     ///
@@ -230,7 +230,7 @@ impl TunnelReadPort {
         }
     }
 }
-
+///the message directly send to tunnel message to drop port.
 impl Drop for TunnelReadPort {
     fn drop(&mut self) {
         match self.tx.send(Message::PortDrop(self.port_id)){
@@ -239,7 +239,10 @@ impl Drop for TunnelReadPort {
         };
     }
 }
-
+    // Read Port meesage and check address, and get reply from server
+    // if is "DATA", write data into buffer and write into tcpstream
+    // if is "SHUTDOWN_WRITE", stop write to stream
+    // eles, shutdown the connection
 pub fn tunnel_read_port(tcpstream: TcpStream, port: TunnelReadPort) {
     let addr = match port.read() {
         PortMessage::ConnectOk(buf) =>{
@@ -330,12 +333,14 @@ fn tunnel_tcp_recv( receiver: TcpStream,
     };
     stream.shutdown();
 }
-
+/// The loop to keep listening TCP stream (Tunnel), extracting the message of tunnel
+/// and send it to the sync_channel receiver which is the Tunnel message handler.
 fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
                     stream: &mut Tcp) -> Result<(), TcpError> {
 
     loop {
         let op = try!(stream.read_u8());
+        // HEARTBEAT is the initialization of communication
         if op == sc::HEARTBEAT_RSP {
             match core_tx.send(Message::SCHeartbeat){
                 Ok(_) => {},
