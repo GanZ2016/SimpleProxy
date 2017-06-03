@@ -39,20 +39,20 @@ cargo build --release
 ```
 - Run the program :
 ```
-./server -s your_DO_ip:8080 -c 5 -l 127.0.0.1:1080
+./client -s your_DO_ip:8080 -c 5 -l 127.0.0.1:1080
 ```
 
-You can choose how many tunnels you want to create by changing the number after `-c`. You can also change the local listening address and port after `-l`.
+You can choose how many tunnels you want to create by changing the number following `-c`. You can also change the local listening address and port following `-l`.
 
 Please check your ip if your get any error message.
 
 #### Chrome/Firefox
 
-- If you are using Chrome, download [SwitchyOmega](https://chrome.google.com/webstore/detail/proxy-switchyomega/padekgcemlokbadohgkifijomclgjgif?hl=en) and enable the socks5 proxy.
-- If you are using Firefox, configure the socks5 proxy in settings using the local address `127.0.0.1:1080`.
+- For Chrome user: download [SwitchyOmega](https://chrome.google.com/webstore/detail/proxy-switchyomega/padekgcemlokbadohgkifijomclgjgif?hl=en) and enable the socks5 proxy.
+- For Firefox user: configure the socks5 proxy in settings using the local address `127.0.0.1:1080`.
 
 ----------
->>>>>>> 7c0fa12d78cca44b99546918d490464184d0673c
+
 ## Week 9 Update
 **Socks5**
 
