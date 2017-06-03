@@ -3,16 +3,7 @@
 A simple SOCKS5 proxy server.
 ## Build on your local machine
 
-<<<<<<< HEAD
-- First, you need to install rustup nightly. Because we used some unstable features.
-- Try to run following command on your command line in your local directory.
-cargo build --release
-- Next, for server part. Under target/release path. run following command
-./server(server.exe for windows)  -l listen-address
-- Clien part:
-./client(client.exe for windows) -s server-address -c tunnel-count [-l listen-address]
----
-=======
+
 ----------
 
 ## Final version
