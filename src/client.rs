@@ -389,7 +389,8 @@ fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
 
     Ok(())
 }
-
+//Main function for Tunnel. First create an TCP stream which is the connection between client and server.
+// Then use message handler which is tunnel_loop to handle message between client and server.
 
 fn tunnel_core_task(tid: u32, server_addr: String,
                     core_rx: Receiver<Message>,
@@ -433,6 +434,7 @@ fn tunnel_core_task(tid: u32, server_addr: String,
         tunnel_core_task(tid, server_addr, core_rx, core_tx);
     });
 }
+//
 fn tunnel_loop(tid: u32,
                core_rx: &Receiver<Message>, stream: &mut Tcp,
                port_map: &mut PortMap)
