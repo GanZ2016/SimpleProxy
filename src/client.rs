@@ -182,8 +182,8 @@ impl TunnelWritePort {
     /// let (tx, rx) = channel();
     /// let write_port = TunnelWritePort { port_id: 0, tx: tx }
     /// let mut buf = Vec::new();
-    /// write_port.connect_domain_name(0);
-    /// assert_eq!(rx.recv().unwrap(), Message::CSConnectDN(0));
+    /// write_port.shutdown_write();
+    /// assert_eq!(rx.recv().unwrap(), Message::CSShutdownWrite(0));
     /// ```
     pub fn shutdown_write(&self) {
         match self.tx.send(Message::CSShutdownWrite(self.port_id)){
@@ -199,7 +199,7 @@ impl TunnelWritePort {
     /// let (tx, rx) = channel();
     /// let write_port = TunnelWritePort { port_id: 0, tx: tx }
     /// let mut buf = Vec::new();
-    /// write_port.close(0);
+    /// write_port.close();
     /// assert_eq!(rx.recv().unwrap(), Message::CSClosePort(0));
     /// ```
     pub fn close(&self) {

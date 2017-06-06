@@ -65,6 +65,20 @@ struct PortMapValue {
 type PortMap = HashMap<u32, PortMapValue>;
 
 impl Tunnel {
+    /// Returns a tunnel which has one sync_channel 
+    /// Based on the SSH remote port forwarding
+    ///
+    /// # Arguments
+    /// 
+    /// * `tid` - A unsigned integer of 32bit that shows the index of tunnel
+    /// * `server_add`` - A IPv4 address including port that server is listening.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use doc::Tunnel;
+    /// let new_tunnel = Tunnel::new(0, "127.0.0.1:1080");
+    /// ```
     pub fn new(stream: TcpStream) {
         thread::spawn(move || {
             tunnel_core_task(stream);
@@ -82,19 +96,62 @@ impl Clone for Tunnel {
 
 /// Write message to sync_channel to do different operations.
 impl TunnelWritePort {
+    /// Check connection between server and client
+    ///
+    /// # Argument
+    ///
+    /// *`buf` - A vector of u8 that is the data sending to tunnel
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// use doc::TunnelWritePort;
+    /// let (tx, rx) = channel();
+    /// let write_port = TunnelWritePort { port_id: 0, tx: tx }
+    /// let mut buf = Vec::new();
+    /// write_port.connect_ok(buf.clone());
+    /// assert_eq!(rx.recv().unwrap(), Message::SCConnectOk(0,buf));
+    /// ```
     fn connect_ok(&self, buf: Vec<u8>) {
         match self.tx.send(Message::SCConnectOk(self.port_id, buf)){
             Ok(_) => {},
             Err(_) => {}
         };
     }
-
+    /// Writing data for a specific port to tunnel
+    ///
+    /// # Arguments
+    ///
+    /// *`buf` - A vector of u8 that is the data sending to tunnel
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use doc::TunnelWritePort;
+    /// let (tx, rx) = channel();
+    /// let write_port = TunnelWritePort { port_id: 0, tx: tx }
+    /// let mut buf = Vec::new();
+    /// write_port.write(buf.clone());
+    /// assert_eq!(rx.recv().unwrap(), Message::SCData(0,buf));
+    /// ```
     fn write(&self, buf: Vec<u8>) {
         match self.tx.send(Message::SCData(self.port_id, buf)){
             Ok(_) => {},
             Err(_) => {}
         };
     }
+    /// shutdown the writing of port.
+    /// # Example
+    ///
+    /// ```
+    /// use doc::TunnelWritePort;
+    /// let (tx, rx) = channel();
+    /// let write_port = TunnelWritePort { port_id: 0, tx: tx }
+    /// let mut buf = Vec::new();
+    /// write_port.shutdown_write();
+    /// assert_eq!(rx.recv().unwrap(), Message::SCShutdownWrite(0));
+    /// ```
 
     fn shutdown_write(&self) {
         match self.tx.send(Message::SCShutdownWrite(self.port_id)){
@@ -102,7 +159,17 @@ impl TunnelWritePort {
             Err(_) => {}
         };
     }
-
+    /// close port.
+    /// # Example
+    ///
+    /// ```
+    /// use doc::TunnelWritePort;
+    /// let (tx, rx) = channel();
+    /// let write_port = TunnelWritePort { port_id: 0, tx: tx }
+    /// let mut buf = Vec::new();
+    /// write_port.close();
+    /// assert_eq!(rx.recv().unwrap(), Message::CSClosePort(0));
+    /// ```
     fn close(&self) {
         match self.tx.send(Message::SCClosePort(self.port_id)){
             Ok(_) => {},
@@ -111,6 +178,7 @@ impl TunnelWritePort {
     }
 
 }
+///the message directly send to tunnel message to drop port.
 impl Drop for TunnelWritePort {
     fn drop(&mut self) {
         match self.tx.send(Message::PortDrop(self.port_id)){
@@ -134,7 +202,7 @@ impl Drop for TunnelReadPort {
         };
     }
 }
-
+// write port message or shutdown write
 fn tunnel_port_write(s: TcpStream, write_port: TunnelWritePort) {
     let mut stream = Tcp::new(s);
 
@@ -156,7 +224,10 @@ fn tunnel_port_write(s: TcpStream, write_port: TunnelWritePort) {
         }
     }
 }
-
+// Read Port meesage and check address, and get reply from server
+// if is "DATA", write data into buffer and write into tcpstream
+// if is "SHUTDOWN_WRITE", stop write to stream
+// eles, shutdown the connection
 fn tunnel_port_read(s: TcpStream, read_port: TunnelReadPort) {
     let mut stream = Tcp::new(s);
 
@@ -182,6 +253,10 @@ fn tunnel_port_read(s: TcpStream, read_port: TunnelReadPort) {
         }
     }
 }
+//  Read port messages and send reply to the client.
+//  If port message is Data, then write data into buffer and write into tcpstream.
+//  If port message is ConnectDN, then resolve the host with domain_name and port.
+//  Return message to client.
 fn tunnel_port_task(read_port: TunnelReadPort, write_port: TunnelWritePort) {
     let os = match read_port.read() {
         PortMessage::Data(cs::CONNECT, buf) => {
@@ -210,7 +285,7 @@ fn tunnel_port_task(read_port: TunnelReadPort, write_port: TunnelWritePort) {
         },
         _ => None
     };
-
+    // check Tcpstream connected with remote host
     let s = match os {
         Some(s) => s,
         None => {
@@ -231,7 +306,7 @@ fn tunnel_port_task(read_port: TunnelReadPort, write_port: TunnelWritePort) {
             return write_port.close();
         }
     }
-
+    // write to port with message
     let receiver = s.try_clone().unwrap();
     thread::spawn(move || {
         tunnel_port_write(receiver, write_port);
@@ -239,6 +314,7 @@ fn tunnel_port_task(read_port: TunnelReadPort, write_port: TunnelWritePort) {
 
     tunnel_port_read(s, read_port);
 }
+/// Tcp listener for client. Extracting the header and process data.
 fn tunnel_tcp_recv(receiver: TcpStream,
                    core_tx: SyncSender<Message>) {
     let mut stream = Tcp::new(receiver);
@@ -252,13 +328,15 @@ fn tunnel_tcp_recv(receiver: TcpStream,
         Err(_) => {}
     };
 }
-
+/// The loop to keep listening TCP stream (Tunnel), extracting the message of tunnel
+/// and send it to the sync_channel receiver which is the Tunnel message handler.
 fn tunnel_recv_loop(core_tx: &SyncSender<Message>,
                     stream: &mut Tcp) -> Result<(), TcpError> {
 
 
     loop {
         let op = try!(stream.read_u8());
+        // HEARTBEAT is the initialization of communication
         if op == cs::HEARTBEAT {
             match core_tx.send(Message::CSHeartbeat){
                 Ok(_) => {},
