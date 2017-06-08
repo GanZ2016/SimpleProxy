@@ -70,6 +70,6 @@ fn main() {
         },
         Ok(count) =>{count},
     };  
-    logger::init(log::LogLevel::Info, log_path).unwrap();
+    logger::init(log::LogLevel::Info).unwrap();
     start_tunnels(l_addr,s_addr,count);
 }

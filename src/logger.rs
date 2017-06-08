@@ -1,10 +1,4 @@
 //Reference https://doc.rust-lang.org/log/log/index.html
-use std::vec::Vec;
-use std::collections::vec_deque::VecDeque;
-use std::sync::{Arc, Mutex, Condvar};
-use std::fs::OpenOptions;
-use std::io::Write;
-use std::thread;
 use log;
 use log::{LogRecord, LogLevel, LogMetadata, SetLoggerError};
 
@@ -27,7 +21,7 @@ impl log::Log for ChannelLogger {
 }
 
 
-pub fn init(level: LogLevel, log_path: String) -> Result<(), SetLoggerError> {
+pub fn init(level: LogLevel) -> Result<(), SetLoggerError> {
     log::set_logger(|max_level| {
         max_level.set(log::LogLevelFilter::Info);
         Box::new(ChannelLogger{ level: level})
