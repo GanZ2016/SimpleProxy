@@ -33,7 +33,7 @@ enum Message {
 
     CloseTunnel,
 }
-//Enumeration Type for Port Message.
+// Enumeration Type for Port Message.
 pub enum PortMessage {
 
     ConnectDN(Vec<u8>, u16),

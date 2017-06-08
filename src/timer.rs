@@ -4,8 +4,8 @@ use std::sync::mpsc::Receiver;
 use std::time::Duration;
 use std::thread;
 
-//Create a concurrent timer to let tunnel thread 
-//waiting for a certain amount of time.
+// Create a concurrent timer to let tunnel thread 
+// waiting for a certain amount of time.
 
 pub struct Timer;
 

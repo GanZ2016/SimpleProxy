@@ -11,7 +11,7 @@ use SimpleProxy::logger;
 
 
 fn start_tunnels(l_addr: String, s_addr:String,tunnel_count:u32) {
-    //tunnel vector for multi-tunnels
+    // Tunnel vector for multi-tunnels
     let mut tunnels = Vec::new();
     for i in 0..tunnel_count {
         let new_tunnel = Tunnel::new(i,s_addr.clone());
@@ -22,7 +22,6 @@ fn start_tunnels(l_addr: String, s_addr:String,tunnel_count:u32) {
 
     
     println!("connecting to {}", s_addr.as_str());
-    //info!("starting up");
     // Returns an iterator over the connections being received on this listener.
     for stream in new_listener.incoming() {
         match stream {
@@ -59,9 +58,8 @@ fn main() {
     };
     let s_addr = matches.opt_str("s").unwrap();
     let tunnel_count = matches.opt_str("c").unwrap();
-    //defult listen address 127.0.0.1:1080
+    // defult listen address 127.0.0.1:1080
     let l_addr = matches.opt_str("l").unwrap_or("127.0.0.1:1080".to_string());
-    let log_path = matches.opt_str("log").unwrap_or(String::new());
     let count :u32 = match tunnel_count.parse(){
         Err(_) | Ok(0) =>{
             println!("count must larger than 0");
